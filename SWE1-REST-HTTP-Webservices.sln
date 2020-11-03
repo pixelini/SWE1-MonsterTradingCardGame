@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30523.141
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SWE1-REST-HTTP-Webservices", "SWE1-REST-HTTP-Webservices\SWE1-REST-HTTP-Webservices.csproj", "{A4CED017-A6ED-4578-914B-89BC6D9690BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A4CED017-A6ED-4578-914B-89BC6D9690BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4CED017-A6ED-4578-914B-89BC6D9690BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4CED017-A6ED-4578-914B-89BC6D9690BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4CED017-A6ED-4578-914B-89BC6D9690BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D88FCE65-BC4A-4AB5-A731-F7611BA89DAC}
+	EndGlobalSection
+EndGlobal
