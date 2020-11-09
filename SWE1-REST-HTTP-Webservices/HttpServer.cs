@@ -9,23 +9,23 @@ namespace SWE1_REST_HTTP_Webservices
 {
     class HttpServer
     {
-        public bool running = false;
-        private TcpListener listener;
+        public bool Running = false;
+        private TcpListener Listener;
 
         public HttpServer(IPAddress addr, int port)
         {
-            listener = new TcpListener(addr, port);
+            Listener = new TcpListener(addr, port);
         }
 
         public void Run()
         {
-            listener.Start();
-            running = true;
+            Listener.Start();
+            Running = true;
 
-            while (running)
+            while (Running)
             {
                 Console.WriteLine("\nWaiting for connection...");
-                TcpClient connection = listener.AcceptTcpClient();
+                TcpClient connection = Listener.AcceptTcpClient();
                 Console.WriteLine("Connected!\n");
 
                 ReceiveRequests(connection);
@@ -33,9 +33,10 @@ namespace SWE1_REST_HTTP_Webservices
                 connection.Close();
             }
 
-            running = false;
-            listener.Stop();
+            Running = false;
+            Listener.Stop();
         }
+
 
         private void ReceiveRequests(TcpClient connection)
         {
@@ -48,9 +49,9 @@ namespace SWE1_REST_HTTP_Webservices
 
             Console.WriteLine("Request: \n" + input);
 
-            //RequestContext req = RequestContext.GetRequest(msg);
-            //Response res = Response.From(req);
-            //res.Post(client.GetStream());
+            RequestContext req = RequestContext.parseRequest(input);
+            req.Print();
+
         }
 
         private void WriteResponse(TcpClient connection)
@@ -72,9 +73,6 @@ namespace SWE1_REST_HTTP_Webservices
                 Console.WriteLine(e.ToString());
             }
 
-            //RequestContext req = RequestContext.GetRequest(msg);
-            //Response res = Response.From(req);
-            //res.Post(client.GetStream());
         }
     }
 }

@@ -23,5 +23,20 @@ namespace UnitTests
             // Assert
             
         }
+        public void MessageRead()
+        {
+            // Arrange
+            Message myMessage = new Message();
+            myMessage.Content = "This is my text.";
+
+            // Act
+            var newContent = "Message changed.";
+            myMessage.Update(newContent);
+
+            // Assert
+            Assert.That(myMessage.Content == newContent);
+        }
+
+
     }
 }

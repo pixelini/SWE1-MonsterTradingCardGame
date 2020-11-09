@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +12,8 @@ namespace SWE1_REST_HTTP_Webservices
     class Program
     {
 
+        // Program has HttpServer and messages resource
+
         static void Main(string[] args)
         {
 
@@ -20,6 +23,8 @@ namespace SWE1_REST_HTTP_Webservices
 
             Status myStatus = new Status(200, "OK");
             myStatus.Print();
+
+            List<Message> resource = new List<Message>(); // all messages are stored in this list
 
 
         }
