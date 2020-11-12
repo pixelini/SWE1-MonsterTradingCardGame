@@ -12,8 +12,6 @@ namespace SWE1_REST_HTTP_Webservices
     class Program
     {
 
-        // Program has HttpServer and messages resource
-
         static void Main(string[] args)
         {
 

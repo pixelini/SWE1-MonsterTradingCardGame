@@ -9,77 +9,104 @@ namespace SWE1_REST_HTTP_Webservices
     {
         public HttpVerb Method { get; set; }
         public string ResourcePath { get; set; }
-        public int Resource { get; set; }
+        //public int Resource { get; set; }
         public string HttpVersion { get; set; }
         public Dictionary<string, string> Headers { get; set; }
         public string Payload { get; set; }
 
-        public RequestContext(string method, string resourcePath, string httpVersion)
+        public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload)
         {
+
             if (method == "GET")
             {
                 Method = HttpVerb.GET;
+            }
 
-                // save given resourcePath in seperated variables (path and resource)
+            ResourcePath = resourcePath;
+            HttpVersion = httpVersion;
+            Headers = headers;
+            Payload = payload;
+        }
 
-                // get path
-                string dirName = System.IO.Path.GetDirectoryName(resourcePath);
-                ResourcePath = dirName;
+        public static RequestContext ParseRequest(string data)
+        {
+            // get the method
+            //string[] parts = data.Split(' ', '\n', '\r');
+            //string[] parts = data.Split('\r','\n');
+            string[] lines = data.Split('\r', '\n');
 
-                // get resource nr of path and try to cast it in int (important that's an int because it's later used as array index)
-                string msgNr = System.IO.Path.GetFileName(ResourcePath);
-                int temp;
-                bool successful = Int32.TryParse(msgNr, out temp);
-                if (successful)
+
+            // first line is special (lines[0]
+            string firstLine = lines[0];
+            string[] partsFirstLine = firstLine.Split(' ');
+
+            string method = partsFirstLine[0]; // GET
+            string resource = partsFirstLine[1]; // /messages/1
+            string version = partsFirstLine[2]; // HTTP/1.1
+
+
+
+/*            foreach (var partFirstLine in partsFirstLine)
+            {
+                Console.WriteLine($"<{partFirstLine}>");
+            }*/
+
+
+            // then all headers (starting with index 2; every even index; if empty stop)
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+
+            int i = 2;
+            int indexPayload = -1;
+            while (lines[i] != "")
+            {
+                string[] splittedHeaders = lines[i].Split(':', 2);
+                headers.Add(splittedHeaders[0], splittedHeaders[1]); // Exception?
+                i += 2;
+
+                if (lines[i] == "")
                 {
-                    Resource = temp;
+                    indexPayload = i + 2;
                 }
             }
 
-            HttpVersion = httpVersion;
-        }
-
-        public static RequestContext parseRequest(string data)
-        {
-            //Console.WriteLine("Parsed info: \n" + data);
-
-            // get the GET
-            string[] parts = data.Split(' ', '\n', '\r');
-
-/*            foreach (var part in parts)
+            // get the payload in one string
+            StringBuilder sb = new StringBuilder();
+            while (indexPayload < lines.Length)
             {
-                Console.WriteLine($"<{part}>");
-            }*/
+                sb.Append(lines[indexPayload]);
+                sb.Append('\n');
+                indexPayload++;
+            }
 
-            string method = parts[0]; // GET
-            string resource = parts[1]; // /messages/1
-            string version = parts[2]; // HTTP/1.1
+            string payload = sb.ToString();
 
-            return new RequestContext(method, resource, version);
+            return new RequestContext(method, resource, version, headers, payload);
 
         }
 
         public void Print()
         {
             Console.WriteLine(
-                "My RequestContext object:\n" +
+                "My RequestContext object:\n\n" +
                 "Method: {0}\n" +
                 "ResourcePath: {1}\n" +
-                "Resource: {2}\n" +
-                "HttpVersion: {3}\n" +
-                "Headers: {4}\n" +
-                "Payload: {5}\n", 
+                "HttpVersion: {2}\n\n" +
+                "Payload:\n{3}\n", 
                 Method, 
                 ResourcePath, 
-                Resource, 
                 HttpVersion, 
-                Headers, 
                 Payload
                 );
+
+            Console.WriteLine("Headers: ");
+
+            foreach (var header in Headers)
+            {
+                Console.WriteLine(String.Format("Key: {0, -20} Value: {1, -20} ", header.Key, header.Value)); // right aligned with -
+            }
+
+
         }
-    
-
-
 
         public static void HandleList()
         {

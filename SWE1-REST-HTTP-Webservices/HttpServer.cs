@@ -49,7 +49,7 @@ namespace SWE1_REST_HTTP_Webservices
 
             Console.WriteLine("Request: \n" + input);
 
-            RequestContext req = RequestContext.parseRequest(input);
+            RequestContext req = RequestContext.ParseRequest(input);
             req.Print();
 
         }
@@ -59,7 +59,8 @@ namespace SWE1_REST_HTTP_Webservices
             NetworkStream dataStream = connection.GetStream();
 
             // Writing response to the client
-            string text = "This is my response";
+            string text = "This is my response"; // later: create Response!
+
             byte[] response = Encoding.ASCII.GetBytes(text);
 
             try
@@ -68,9 +69,9 @@ namespace SWE1_REST_HTTP_Webservices
                 dataStream.Close();
                 connection.Close();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(ex.ToString());
             }
 
         }
