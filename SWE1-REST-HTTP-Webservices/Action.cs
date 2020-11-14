@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SWE1_REST_HTTP_Webservices
 {
-    enum Action
+    public enum Action
     {
         LIST,
         ADD,

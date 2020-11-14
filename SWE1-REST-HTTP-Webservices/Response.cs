@@ -12,13 +12,23 @@ namespace SWE1_REST_HTTP_Webservices
         public Dictionary<string, string> Headers { get; set; }
         public string Body { get; set; }
 
+        public Response()
+        {
+            HttpVersion = "HTTP/1.1";
+            Status = -1;
+            StatusMessage = "";
+            Headers = new Dictionary<string, string>();
+            Headers.Add("Content-Type", "text/plain");
+            Body = null;
+        }
+
         public Response(int status, string statusMessage)
         {
             HttpVersion = "HTTP/1.1";
             Status = status;
             StatusMessage = statusMessage;
             Headers = new Dictionary<string, string>();
-            Headers.Add("Content-Type", "plain/text");
+            Headers.Add("Content-Type", "text/plain");
             Headers.Add("Content-Length", "0");
             Body = null;
         }
@@ -29,7 +39,7 @@ namespace SWE1_REST_HTTP_Webservices
             Status = status;
             StatusMessage = statusMessage;
             Headers = new Dictionary<string, string>();
-            Headers.Add("Content-Type", "plain/text");
+            Headers.Add("Content-Type", "text/plain");
             Headers.Add("Content-Length", body.Length.ToString());
             Body = body;
         }
@@ -52,11 +62,11 @@ namespace SWE1_REST_HTTP_Webservices
 
             // add all headers
             data.Append(GetHeaders());
+            data.Append("\r\n");
 
             // add body if nescessary
             if (Body != null)
             {
-                data.Append("\r\n");
                 data.Append(Body);
             }
             return data.ToString();

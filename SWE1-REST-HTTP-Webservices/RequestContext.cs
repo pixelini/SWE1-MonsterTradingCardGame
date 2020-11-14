@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SWE1_REST_HTTP_Webservices
 {
-    class RequestContext
+    public class RequestContext
     {
         public Action Action { get; set; }
         public HttpVerb Method { get; set; }
@@ -14,8 +14,16 @@ namespace SWE1_REST_HTTP_Webservices
         public Dictionary<string, string> Headers { get; set; }
         public string Payload { get; set; }
 
-
-        public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload, Action action)
+        public RequestContext()
+        {
+            Action = Action.UNDEFINED;
+            Method = HttpVerb.GET;
+            ResourcePath = "";
+            HttpVersion = "HTTP/1.1";
+            Headers = new Dictionary<string, string>();
+            Payload = null;
+        }
+        public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload)
         {
 
             if (method == "GET")
@@ -32,13 +40,13 @@ namespace SWE1_REST_HTTP_Webservices
                 Method = HttpVerb.DELETE;
             } else
             {
-                // not valid! throw error
+                return;
             }
 
             ResourcePath = resourcePath;
             HttpVersion = httpVersion;
             Headers = headers;
-            Action = action;
+            Action = Action.UNDEFINED;
 
             if (payload == "" || payload == "\n")
             {

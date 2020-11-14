@@ -4,20 +4,31 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SWE1_REST_HTTP_Webservices
 {
-    class HttpServer
+    public class HttpServer
     {
         public bool Running = false;
-        private TcpListener Listener;
-        private EndpointHandler EndpointHandler;
-        
+        private IListener Listener;
+        private IEndpointHandler EndpointHandler;
+        public string MessagePath { get; set; }
+
 
         public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages)
         {
-            Listener = new TcpListener(addr, port);
-            EndpointHandler = new EndpointHandler(messagePath, ref messages);
+            Listener = new Listener(addr, port);
+            MessagePath = messagePath;
+            EndpointHandler = new EndpointHandler(ref messages);
+        }
+
+        // for mocking
+        public HttpServer(IPAddress addr, int port, string messagePath, IEndpointHandler endpointHandler)
+        {
+            Listener = new Listener(addr, port);
+            EndpointHandler = endpointHandler;
+            MessagePath = messagePath;
         }
 
         public void Run()
@@ -28,71 +39,92 @@ namespace SWE1_REST_HTTP_Webservices
             while (Running)
             {
                 Console.WriteLine("\nWaiting for connection...");
-                TcpClient connection = Listener.AcceptTcpClient();
+                IClient connection = Listener.AcceptTcpClient();
                 Console.WriteLine("Connected!\n");
-
-                ReceiveRequests(connection);
-                //WriteResponse(connection);
-                connection.Close();
+                ProcessRequest(connection);
             }
 
             Running = false;
             Listener.Stop();
         }
 
-        private void ReceiveRequests(TcpClient connection)
+        public void ProcessRequest(IClient connection)
         {
-            NetworkStream dataStream = connection.GetStream();
+            RequestContext request = connection.ReceiveRequest();
 
-            byte[] buffer = new byte[2048];
-            int bufferRead = dataStream.Read(buffer, 0, buffer.Length);
-            string input = null;
-            input = Encoding.ASCII.GetString(buffer, 0, bufferRead); // get string from byte array
+            // Handle Request
+            Action action = GetRequestedAction(request);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Received Data: \n" + input + "\n");
-            Console.ForegroundColor = ConsoleColor.White;
-
-            RequestContext req = EndpointHandler.ParseRequest(input);
-
-            if (req != null)
+            if (request != null)
             {
-                //Console.ForegroundColor = ConsoleColor.Green;
-                req.Print();
-                //Console.ForegroundColor = ConsoleColor.White;
+                request.Action = action;
+                request.Print(); // if not null, print! --> clever alternative: request?.Print(); :D
+            }      
+            Response response = EndpointHandler.HandleRequest(request);
 
-                Response response = EndpointHandler.HandleRequest(req);
-                
-                // Send Response
-                SendResponse(connection, response);
+            // Send Response
+            connection.SendResponse(response);
+        }
+
+
+        public Action GetRequestedAction(RequestContext req)
+        {
+            if (req == null)
+            {
+                return Action.UNDEFINED;
+            }
+            // check if first line contains required information for all http methods
+            if (req.Method == HttpVerb.GET && req.ResourcePath == MessagePath)
+            {
+                return Action.LIST;
+            }
+            else if (req.Method == HttpVerb.POST && req.ResourcePath == MessagePath)
+            {
+                return Action.ADD;
+            }
+            else if (req.Method == HttpVerb.GET && IsValidPathWithMsgID(req.ResourcePath))
+            {
+                return Action.READ;
+            }
+            else if (req.Method == HttpVerb.PUT && IsValidPathWithMsgID(req.ResourcePath))
+            {
+                return Action.UPDATE;
+            }
+            else if (req.Method == HttpVerb.DELETE && IsValidPathWithMsgID(req.ResourcePath))
+            {
+                return Action.DELETE;
+            }
+            else
+            {
+                Console.WriteLine("Not a valid request!");
+                return Action.UNDEFINED;
             }
 
         }
 
-        private void SendResponse(TcpClient connection, Response response)
+        private bool IsValidPathWithMsgID(string path)
         {
-            NetworkStream dataStream = connection.GetStream();
+            // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
+            StringBuilder regPattern = new StringBuilder();
+            regPattern.Append(@"^\");
+            regPattern.Append(MessagePath);
+            regPattern.Append(@"\/\d+");
 
-            // Writing response to the client
-            Console.ForegroundColor = ConsoleColor.Green;
-            response.Print();
-            Console.ForegroundColor = ConsoleColor.White;
-
-            byte[] responseData = Encoding.ASCII.GetBytes(response.ToString());
-
-            try
+            string pattern = regPattern.ToString();
+            Match m = Regex.Match(path, pattern, RegexOptions.IgnoreCase);
+            if (m.Success)
             {
-                dataStream.Write(responseData, 0, responseData.Length);
-                dataStream.Close();
-                connection.Close();
+                //Console.WriteLine("Found regex '{0}'", m.Value);
+                return true;
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine("Path is not valid!");
             }
+
+            return false;
 
         }
-
 
     }
 }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SWE1_REST_HTTP_Webservices
 {
-    enum HttpVerb
+    public enum HttpVerb
     {
         GET,
         POST,

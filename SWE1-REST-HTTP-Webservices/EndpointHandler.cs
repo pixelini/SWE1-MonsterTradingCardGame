@@ -1,132 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace SWE1_REST_HTTP_Webservices
 {
-    class EndpointHandler
+    public class EndpointHandler : IEndpointHandler
     {
-        public string MessagePath { get; set; }
         List<Message> Messages;
         private int Counter;
 
-        public EndpointHandler(string messagePath, ref List<Message> messages)
+        public EndpointHandler(ref List<Message> messages)
         {
-            MessagePath = messagePath;
             Messages = messages;
             Counter = 0;
-        }
-        
-        public RequestContext ParseRequest(string data)
-        {
-            // get lines from whole input
-            string[] lines = data.Split('\r', '\n');
-
-            // check if client called a valid request (only first line, not the payload)
-            // (with valid http method and path which is accessible for server)
-            string firstLine = lines[0];
-            string[] partsFirstLine = firstLine.Split(' ');
-            string method = partsFirstLine[0]; // GET
-            string resource = partsFirstLine[1]; // /messages/1
-            string version = partsFirstLine[2]; // HTTP/1.1
-
-            Action action = IsValidRequest(method, resource);
-
-            if (action == Action.UNDEFINED)
-            {
-                // send status --> 400 BAD RESPONSE
-                return null;
-            }
-
-            /*foreach (var partFirstLine in partsFirstLine)
-            {
-                Console.WriteLine($"<{partFirstLine}>");
-            }*/
-
-
-            // all headers (starting with index 2; every even index; if empty stop)
-            Dictionary<string, string> headers = new Dictionary<string, string>();
-
-            int i = 2;
-            bool hasPayload = false;
-            int indexPayload = -1; // helps to find out where payload starts
-            while (lines[i] != "")
-            {
-                string[] splittedHeaders = lines[i].Split(':', 2);
-                headers.Add(splittedHeaders[0], splittedHeaders[1]); // Exception?
-                i += 2;
-
-                if ((lines[i] == "") && (action == Action.ADD || action == Action.UPDATE))
-                {
-                    hasPayload = true;
-                    indexPayload = i + 2;
-                }
-            }
-
-            string payload = null;
-
-            if (hasPayload)
-            {
-                // get the payload in one string
-                StringBuilder sb = new StringBuilder();
-                while (indexPayload < lines.Length)
-                {
-                    sb.Append(lines[indexPayload]);
-
-                    if (indexPayload < lines.Length - 1) { //last line has already a \n
-                        sb.Append('\n');
-                    }
-                    indexPayload++;
-                }
-                payload = sb.ToString();
-            }
-            else
-            {
-                payload = null;
-            }
-
-            return new RequestContext(method, resource, version, headers, payload, action);
-
         }
         
         public Response HandleRequest(RequestContext req)
         {
             Response response = null;
 
-            if (req != null)
-            {
-                switch (req.Action)
-                {
-                    case Action.LIST:
-                        response = HandleList(req);
-                        break;
-                    case Action.ADD:
-                        response = HandleAdd(req);
-                        break;
-                    case Action.READ:
-                        response = HandleRead(req);
-                        break;
-                    case Action.UPDATE:
-                        response = HandleUpdate(req);
-                        break;
-                    case Action.DELETE:
-                        response = HandleDelete(req);
-                        break;
-                    default:
-                        Console.WriteLine("Request in not valid");
-                        break;
-                }
-            } else
+            if (req == null)
             {
                 Console.WriteLine("Object is not initialised.");
-            }
-
-            if (response == null)
-            {
                 response = new Response(400, "Bad Request");
+                return response;
             }
 
+            switch (req.Action)
+            {
+                case Action.LIST:
+                    response = HandleList(req);
+                    break;
+                case Action.ADD:
+                    response = HandleAdd(req);
+                    break;
+                case Action.READ:
+                    response = HandleRead(req);
+                    break;
+                case Action.UPDATE:
+                    response = HandleUpdate(req);
+                    break;
+                case Action.DELETE:
+                    response = HandleDelete(req);
+                    break;
+                default:
+                    Console.WriteLine("Request in not valid");
+                    response = new Response(400, "Bad Request");
+                    return response;
+            }
+          
             return response;
 
         }
@@ -246,54 +168,7 @@ namespace SWE1_REST_HTTP_Webservices
 
         }
 
-        private Action IsValidRequest(string method, string resource)
-        {
-            // check if first line contains required information for all http methods
-            if (method == "GET" && resource == MessagePath)
-            {
-                return Action.LIST;
-            } else if (method == "POST" && resource == MessagePath)
-            {
-                return Action.ADD;
-            } else if (method == "GET" && IsValidPathWithMsgID(resource))
-            {
-                return Action.READ;
-            } else if (method == "PUT" && IsValidPathWithMsgID(resource))
-            {
-                return Action.UPDATE;
-            } else if (method == "DELETE" && IsValidPathWithMsgID(resource))
-            {
-                return Action.DELETE;
-            } else
-            {
-                Console.WriteLine("Not a valid request!");
-                return Action.UNDEFINED;
-            }
-
-        }
-
-        private bool IsValidPathWithMsgID(string path)
-        {
-            // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
-            StringBuilder regPattern = new StringBuilder();
-            regPattern.Append(@"^\");
-            regPattern.Append(MessagePath);
-            regPattern.Append(@"\/\d+");
-
-            string pattern = regPattern.ToString();
-            Match m = Regex.Match(path, pattern, RegexOptions.IgnoreCase);
-            if (m.Success)
-            {
-                //Console.WriteLine("Found regex '{0}'", m.Value);
-                return true;
-            } else
-            {
-                Console.WriteLine("Path is not valid!");
-            }
-
-            return false;            
-
-        }
+        
 
         private int GetMsgIDFromPath(string path)
         {
@@ -301,7 +176,6 @@ namespace SWE1_REST_HTTP_Webservices
             int msgID = Int32.Parse(msgName); // is possible because regex has already validated path and message number
             return msgID;
         }
-
 
 
     }
