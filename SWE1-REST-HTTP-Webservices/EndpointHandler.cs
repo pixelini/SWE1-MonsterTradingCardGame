@@ -7,7 +7,6 @@ namespace SWE1_REST_HTTP_Webservices
 {
     class EndpointHandler
     {
-        RequestContext Requestdata;
         public string MessagePath { get; set; }
         List<Message> Messages;
         private int Counter;
@@ -17,218 +16,8 @@ namespace SWE1_REST_HTTP_Webservices
             MessagePath = messagePath;
             Messages = messages;
             Counter = 0;
-            RequestContext Requestdata = null;
         }
-
-        public bool HandleRequest(RequestContext req)
-        {
-            HttpVerb reqType = req.Method;
-
-            if (reqType == HttpVerb.GET && req.ResourcePath == MessagePath && req.Payload == null)
-            {
-                // List
-                HandleList(req);
-
-            } else if (reqType == HttpVerb.POST && req.Payload != null)
-            {
-                // Add
-                HandleAdd(req);
-
-            } else if (reqType == HttpVerb.GET && req.ResourcePath != MessagePath && req.Payload == null)
-            {
-                // Read
-                HandleRead(req);
-            }
-            else if (reqType == HttpVerb.PUT && req.Payload != null)
-            {
-                // Update
-                HandleUpdate(req);
-            }
-            else if (reqType == HttpVerb.DELETE && req.Payload == null)
-            {
-                // Delete
-                HandleDelete(req);
-
-            } else
-            {
-                Console.WriteLine("Request in not valid");
-                return false;
-            }
-
-            return true;
-
-
-        }
-
-        private void HandleList(RequestContext req)
-        {
-            // List means: GET /messages
-            if (req.ResourcePath == MessagePath)
-            {
-                Console.WriteLine("Handle list");
-
-                foreach (var message in Messages)
-                {
-                    Console.WriteLine(message.ID + ": " + message.Content);
-                }
-            }
-
-        }
-
-        private void HandleAdd(RequestContext req)
-        {
-            // List means: POST /messages & Payload
-            if (req.ResourcePath == MessagePath)
-            {
-                Counter++;
-                Message inputMessage = new Message(Counter, req.Payload);
-                Messages.Add(inputMessage);
-                Console.WriteLine("New message added.");
-            }
-
-        }
-
-        private void HandleRead(RequestContext req)
-        {
-            
-            string filename = System.IO.Path.GetFileName(req.ResourcePath);
-            string dirname = req.ResourcePath.Substring(0, 9);
-
-            //string dirname = System.IO.Path.GetDirectoryName(req.ResourcePath);
-            //string filename = test2.Substring(10, test2.Length - 10);
-
-            //Console.WriteLine("Dirname: " + dirname);
-            //Console.WriteLine("Filename: " + filename);
-
-            // must be a number - exception?
-            int msgID = Int32.Parse(filename);
-
-            if (dirname == MessagePath)
-            {
-                Console.WriteLine("Handle read");
-
-                // search in messages if message id exists
-                foreach (var message in Messages)
-                {
-                    if (message.ID == msgID)
-                    {
-                        // found msg!
-                        message.Print();
-                    } else
-                    {
-                        // message not found! 404?
-                    }
-                }
-
-            }
-
-        }
-
-        private void HandleUpdate(RequestContext req)
-        {
-
-            string filename = System.IO.Path.GetFileName(req.ResourcePath);
-            string dirname = req.ResourcePath.Substring(0, 9);
-
-            // must be a number - exception?
-            int msgID = Int32.Parse(filename);
-
-            if (dirname == MessagePath)
-            {
-                Console.WriteLine("Handle Update");
-
-                // search in messages if message id exists
-                foreach (var message in Messages)
-                {
-                    if (message.ID == msgID)
-                    {
-                        // found msg!
-                        message.Update(req.Payload);
-                    }
-                    else
-                    {
-                        // message not found! 404?
-                    }
-                }
-
-            }
-        }
-
-        private void HandleDelete(RequestContext req)
-        {
-            string filename = System.IO.Path.GetFileName(req.ResourcePath);
-            string dirname = req.ResourcePath.Substring(0, 9);
-
-            // must be a number - exception?
-            int msgID = Int32.Parse(filename);
-
-            if (dirname == MessagePath)
-            {
-                Console.WriteLine("Handle Delete");
-
-                // search in messages if message id exists
-                for (int i = 0; i < Messages.Count; i++)
-                {
-                    if (Messages[i].ID == msgID)
-                    {
-                        //Console.WriteLine("TO DELETE: " + Messages[i].Content);
-                        Messages.Remove(Messages[i]);
-                    }
-                    
-                }
-
-            }
-        }
-
-
-        private bool IsValidRequest(string method, string resource)
-        {
-
-            // check if first line contains required information for all http methods
-
-            if (method == "GET" && resource == MessagePath) // --> LIST ALL MESSAGES
-            {
-                return true;
-            } else if (method == "POST" && resource == MessagePath) // --> ADD MESSAGE
-            {
-                return true;
-            } else if (method == "GET" && isValidPathWithMsgID(resource)) // --> READ MESSAGE
-            {
-                return true;
-            } else if (method == "PUT" && isValidPathWithMsgID(resource)) // --> UPDATE MESSAGE
-            {
-                return true;
-            } else if (method == "DELETE" && isValidPathWithMsgID(resource)) // --> DELETE MESSAGE
-            {
-                return true;
-            } else
-            {
-                Console.WriteLine("Not a valid request!");
-                return false;
-            }
-
-        }
-
-        private bool isValidPathWithMsgID(string path)
-        {
-            // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
-            StringBuilder regPattern = new StringBuilder();
-            regPattern.Append(@"^\");
-            regPattern.Append(MessagePath);
-            regPattern.Append(@"\/\d+");
-
-            string pattern = regPattern.ToString();
-            Match m = Regex.Match(path, pattern, RegexOptions.IgnoreCase);
-            if (m.Success)
-            {
-                Console.WriteLine("Found '{0}' at position {1}.", m.Value, m.Index);
-                return true;
-            }
-
-            return false;            
-
-        }
-
+        
         public RequestContext ParseRequest(string data)
         {
             // get lines from whole input
@@ -242,14 +31,13 @@ namespace SWE1_REST_HTTP_Webservices
             string resource = partsFirstLine[1]; // /messages/1
             string version = partsFirstLine[2]; // HTTP/1.1
 
-            bool isValid = IsValidRequest(method, resource);
+            Action action = IsValidRequest(method, resource);
 
-            if (!isValid)
+            if (action == Action.UNDEFINED)
             {
                 // send status --> 400 BAD RESPONSE
                 return null;
             }
-
 
             /*foreach (var partFirstLine in partsFirstLine)
             {
@@ -261,32 +49,221 @@ namespace SWE1_REST_HTTP_Webservices
             Dictionary<string, string> headers = new Dictionary<string, string>();
 
             int i = 2;
-            int indexPayload = -1;
+            bool hasPayload = false;
+            int indexPayload = -1; // helps to find out where payload starts
             while (lines[i] != "")
             {
                 string[] splittedHeaders = lines[i].Split(':', 2);
                 headers.Add(splittedHeaders[0], splittedHeaders[1]); // Exception?
                 i += 2;
 
-                if (lines[i] == "")
+                if ((lines[i] == "") && (action == Action.ADD || action == Action.UPDATE))
                 {
+                    hasPayload = true;
                     indexPayload = i + 2;
                 }
             }
 
-            // get the payload in one string
-            StringBuilder sb = new StringBuilder();
-            while (indexPayload < lines.Length)
+            string payload = null;
+
+            if (hasPayload)
             {
-                sb.Append(lines[indexPayload]);
-                sb.Append('\n');
-                indexPayload++;
+                // get the payload in one string
+                StringBuilder sb = new StringBuilder();
+                while (indexPayload < lines.Length)
+                {
+                    sb.Append(lines[indexPayload]);
+                    sb.Append('\n');
+                    indexPayload++;
+                }
+                payload = sb.ToString();
+            }
+            else
+            {
+                payload = null;
             }
 
-            string payload = sb.ToString();
+            return new RequestContext(method, resource, version, headers, payload, action);
 
-            return new RequestContext(method, resource, version, headers, payload);
+        }
+        
+        public void HandleRequest(RequestContext req)
+        {
+            if (req != null)
+            {
+                switch (req.Action)
+                {
+                    case Action.LIST:
+                        HandleList(req);
+                        break;
+                    case Action.ADD:
+                        HandleAdd(req);
+                        break;
+                    case Action.READ:
+                        HandleRead(req);
+                        break;
+                    case Action.UPDATE:
+                        HandleUpdate(req);
+                        break;
+                    case Action.DELETE:
+                        HandleDelete(req);
+                        break;
+                    default:
+                        Console.WriteLine("Request in not valid");
+                        break;
+                }
+            } else
+            {
+                Console.WriteLine("Object is not initialised.");
+            }
+            
 
+        }
+
+        private void HandleList(RequestContext req)
+        {
+            Console.WriteLine("\nHandle List...\n");
+            foreach (var message in Messages)
+            {
+                Console.WriteLine(message.ID + ": " + message.Content);
+            }
+        }
+
+        private void HandleAdd(RequestContext req)
+        {
+            Console.WriteLine("\nHandle Add...\n");
+            Counter++;
+            Message inputMessage = new Message(Counter, req.Payload);
+            Messages.Add(inputMessage);
+            Console.WriteLine("New message added.\n");
+        }
+
+        private void HandleRead(RequestContext req)
+        {
+            Console.WriteLine("\nHandle Read...\n");
+            bool msgFound = false;
+            int msgID = GetMsgIDFromPath(req.ResourcePath); 
+
+            // search in messages if message id exists
+            foreach (var message in Messages)
+            {
+                if (message.ID == msgID)
+                {
+                    msgFound = true;
+                    message.Print();
+                }
+            }
+
+            if (!msgFound)
+            {
+                // message not found! 404?
+                Console.WriteLine("Message not found! Reading not possible!\n");
+            }
+
+        }
+
+        private void HandleUpdate(RequestContext req)
+        {
+            Console.WriteLine("\nHandle Update...\n");
+            bool msgFound = false;
+            int msgID = GetMsgIDFromPath(req.ResourcePath);
+
+            // search in messages if message id exists
+            foreach (var message in Messages)
+            {
+                if (message.ID == msgID)
+                {
+                    msgFound = true;
+                    message.Update(req.Payload);
+                }
+            }
+
+            if (!msgFound)
+            {
+                // message not found! 404?
+                Console.WriteLine("Message not found! Updating not possible!\n");
+            }
+
+        }
+
+        private void HandleDelete(RequestContext req)
+        {
+            Console.WriteLine("\nHandle Delete...\n");
+            bool msgFound = false;
+            int msgID = GetMsgIDFromPath(req.ResourcePath);
+
+            // search in messages if message id exists
+            for (int i = 0; i < Messages.Count; i++)
+            {
+                if (Messages[i].ID == msgID)
+                {
+                    //Console.WriteLine("TO DELETE: " + Messages[i].Content);
+                    msgFound = true;
+                    Messages.Remove(Messages[i]);
+                }           
+            }
+
+            if (!msgFound)
+            {
+                Console.WriteLine("Message not found! Deleting not possible!\n");
+            }
+        
+        }
+
+        private Action IsValidRequest(string method, string resource)
+        {
+            // check if first line contains required information for all http methods
+            if (method == "GET" && resource == MessagePath)
+            {
+                return Action.LIST;
+            } else if (method == "POST" && resource == MessagePath)
+            {
+                return Action.ADD;
+            } else if (method == "GET" && IsValidPathWithMsgID(resource))
+            {
+                return Action.READ;
+            } else if (method == "PUT" && IsValidPathWithMsgID(resource))
+            {
+                return Action.UPDATE;
+            } else if (method == "DELETE" && IsValidPathWithMsgID(resource))
+            {
+                return Action.DELETE;
+            } else
+            {
+                Console.WriteLine("Not a valid request!");
+                return Action.UNDEFINED;
+            }
+
+        }
+
+        private bool IsValidPathWithMsgID(string path)
+        {
+            // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
+            StringBuilder regPattern = new StringBuilder();
+            regPattern.Append(@"^\");
+            regPattern.Append(MessagePath);
+            regPattern.Append(@"\/\d+");
+
+            string pattern = regPattern.ToString();
+            Match m = Regex.Match(path, pattern, RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                //Console.WriteLine("Found regex '{0}'", m.Value);
+                return true;
+            } else
+            {
+                Console.WriteLine("Path is not valid!");
+            }
+
+            return false;            
+
+        }
+
+        private int GetMsgIDFromPath(string path)
+        {
+            string msgName = System.IO.Path.GetFileName(path);
+            int msgID = Int32.Parse(msgName); // is possible because regex has already validated path and message number
+            return msgID;
         }
 
 

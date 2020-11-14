@@ -40,7 +40,6 @@ namespace SWE1_REST_HTTP_Webservices
             Listener.Stop();
         }
 
-
         private void ReceiveRequests(TcpClient connection)
         {
             NetworkStream dataStream = connection.GetStream();
@@ -55,11 +54,14 @@ namespace SWE1_REST_HTTP_Webservices
             Console.ForegroundColor = ConsoleColor.White;
 
             RequestContext req = EndpointHandler.ParseRequest(input);
-            EndpointHandler.HandleRequest(req);
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            req.Print();
-            Console.ForegroundColor = ConsoleColor.White;
+            if (req != null)
+            {
+                EndpointHandler.HandleRequest(req);
+                Console.ForegroundColor = ConsoleColor.Green;
+                req.Print();
+                Console.ForegroundColor = ConsoleColor.White;
+            }
 
         }
 

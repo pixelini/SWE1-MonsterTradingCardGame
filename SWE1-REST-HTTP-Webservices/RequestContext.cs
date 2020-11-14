@@ -7,15 +7,15 @@ namespace SWE1_REST_HTTP_Webservices
 {
     class RequestContext
     {
+        public Action Action { get; set; }
         public HttpVerb Method { get; set; }
         public string ResourcePath { get; set; }
-        //public int Resource { get; set; }
         public string HttpVersion { get; set; }
         public Dictionary<string, string> Headers { get; set; }
         public string Payload { get; set; }
 
 
-        public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload)
+        public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload, Action action)
         {
 
             if (method == "GET")
@@ -38,6 +38,7 @@ namespace SWE1_REST_HTTP_Webservices
             ResourcePath = resourcePath;
             HttpVersion = httpVersion;
             Headers = headers;
+            Action = action;
 
             if (payload == "" || payload == "\n")
             {
@@ -49,9 +50,17 @@ namespace SWE1_REST_HTTP_Webservices
             
         }
 
-
         public void Print()
         {
+            string payloadinfo = "";
+            if (Payload == null)
+            {
+                payloadinfo = "not defined";
+            } else
+            {
+                payloadinfo = Payload;
+            }
+
             Console.WriteLine(
                 "My RequestContext object:\n\n" +
                 "Method: {0}\n" +
@@ -60,8 +69,8 @@ namespace SWE1_REST_HTTP_Webservices
                 "Payload:\n{3}\n", 
                 Method, 
                 ResourcePath, 
-                HttpVersion, 
-                Payload
+                HttpVersion,
+                payloadinfo
                 );
 
             Console.WriteLine("Headers: ");
@@ -71,10 +80,7 @@ namespace SWE1_REST_HTTP_Webservices
                 Console.WriteLine(String.Format("Key: {0, -20} Value: {1, -20} ", header.Key, header.Value)); // right aligned with -
             }
 
-
         }
-
-
 
     }
 }

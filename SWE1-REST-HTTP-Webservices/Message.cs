@@ -9,6 +9,7 @@ namespace SWE1_REST_HTTP_Webservices
         public int ID { get; set; }
         public string Content { get; set; }
 
+
         public Message(int id, string content)
         {
             ID = id;
@@ -20,7 +21,6 @@ namespace SWE1_REST_HTTP_Webservices
             Console.WriteLine(Content);
         }
 
-        // replaces old content with new content
         public void Update(string newContent)
         {
             Content = newContent;

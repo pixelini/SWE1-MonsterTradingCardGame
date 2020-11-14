@@ -14,7 +14,7 @@ namespace SWE1_REST_HTTP_Webservices
 
         static void Main(string[] args)
         {
-
+            Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("Starting server...");
             List<Message> messages = new List<Message>(); // all messages are stored in this list
 
