@@ -14,75 +14,41 @@ namespace SWE1_REST_HTTP_Webservices
         public Dictionary<string, string> Headers { get; set; }
         public string Payload { get; set; }
 
+
         public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload)
         {
 
             if (method == "GET")
             {
                 Method = HttpVerb.GET;
+            } else if (method == "PUT")
+            {
+                Method = HttpVerb.PUT;
+            } else if (method == "POST")
+            {
+                Method = HttpVerb.POST;
+            } else if (method == "DELETE")
+            {
+                Method = HttpVerb.DELETE;
+            } else
+            {
+                // not valid! throw error
             }
 
             ResourcePath = resourcePath;
             HttpVersion = httpVersion;
             Headers = headers;
-            Payload = payload;
+
+            if (payload == "" || payload == "\n")
+            {
+                Payload = null;
+            } else
+            {
+                Payload = payload;
+            }
+            
         }
 
-        public static RequestContext ParseRequest(string data)
-        {
-            // get the method
-            //string[] parts = data.Split(' ', '\n', '\r');
-            //string[] parts = data.Split('\r','\n');
-            string[] lines = data.Split('\r', '\n');
-
-
-            // first line is special (lines[0]
-            string firstLine = lines[0];
-            string[] partsFirstLine = firstLine.Split(' ');
-
-            string method = partsFirstLine[0]; // GET
-            string resource = partsFirstLine[1]; // /messages/1
-            string version = partsFirstLine[2]; // HTTP/1.1
-
-
-
-/*            foreach (var partFirstLine in partsFirstLine)
-            {
-                Console.WriteLine($"<{partFirstLine}>");
-            }*/
-
-
-            // then all headers (starting with index 2; every even index; if empty stop)
-            Dictionary<string, string> headers = new Dictionary<string, string>();
-
-            int i = 2;
-            int indexPayload = -1;
-            while (lines[i] != "")
-            {
-                string[] splittedHeaders = lines[i].Split(':', 2);
-                headers.Add(splittedHeaders[0], splittedHeaders[1]); // Exception?
-                i += 2;
-
-                if (lines[i] == "")
-                {
-                    indexPayload = i + 2;
-                }
-            }
-
-            // get the payload in one string
-            StringBuilder sb = new StringBuilder();
-            while (indexPayload < lines.Length)
-            {
-                sb.Append(lines[indexPayload]);
-                sb.Append('\n');
-                indexPayload++;
-            }
-
-            string payload = sb.ToString();
-
-            return new RequestContext(method, resource, version, headers, payload);
-
-        }
 
         public void Print()
         {
@@ -108,30 +74,7 @@ namespace SWE1_REST_HTTP_Webservices
 
         }
 
-        public static void HandleList()
-        {
 
-        }
-
-        public static void HandleAdd()
-        {
-
-        }
-
-        public static void HandleRead()
-        {
-
-        }
-
-        public static void HandleUpdate()
-        {
-
-        }
-
-        public static void HandleDelete()
-        {
-
-        }
 
     }
 }

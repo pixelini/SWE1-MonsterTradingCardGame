@@ -6,11 +6,18 @@ namespace SWE1_REST_HTTP_Webservices
 {
     public class Message
     {
+        public int ID { get; set; }
         public string Content { get; set; }
 
-        public string Read()
+        public Message(int id, string content)
         {
-            return Content;
+            ID = id;
+            Content = content;
+        }
+
+        public void Print()
+        {
+            Console.WriteLine(Content);
         }
 
         // replaces old content with new content

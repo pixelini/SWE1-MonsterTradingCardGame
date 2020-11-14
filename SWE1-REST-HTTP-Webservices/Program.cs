@@ -16,13 +16,29 @@ namespace SWE1_REST_HTTP_Webservices
         {
 
             Console.WriteLine("Starting server...");
-            HttpServer server = new HttpServer(IPAddress.Loopback, 6789);
+            List<Message> messages = new List<Message>(); // all messages are stored in this list
+
+            Message msg1 = new Message(1, "Hi du Ei!");
+            Message msg2 = new Message(2, "Hi du Frau!");
+            Message msg3 = new Message(3, "Hi du Mann!");
+
+            //messages.Add(msg1);
+            //messages.Add(msg2);
+            //messages.Add(msg3);
+
+
+            string pathToMessages = "/messages";
+            HttpServer server = new HttpServer(IPAddress.Loopback, 6789, pathToMessages, ref messages);
             server.Run();
 
-            Status myStatus = new Status(200, "OK");
-            myStatus.Print();
+            
 
-            List<Message> resource = new List<Message>(); // all messages are stored in this list
+            Response res = new Response();
+            res.Status = 200;
+            res.StatusMessage = "OK";
+            res.Print();
+
+            
 
 
         }

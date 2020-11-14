@@ -11,10 +11,13 @@ namespace SWE1_REST_HTTP_Webservices
     {
         public bool Running = false;
         private TcpListener Listener;
+        private EndpointHandler EndpointHandler;
+        
 
-        public HttpServer(IPAddress addr, int port)
+        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages)
         {
             Listener = new TcpListener(addr, port);
+            EndpointHandler = new EndpointHandler(messagePath, ref messages);
         }
 
         public void Run()
@@ -47,10 +50,16 @@ namespace SWE1_REST_HTTP_Webservices
             string input = null;
             input = Encoding.ASCII.GetString(buffer, 0, bufferRead); // get string from byte array
 
-            Console.WriteLine("Request: \n" + input);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Received Data: \n" + input);
+            Console.ForegroundColor = ConsoleColor.White;
 
-            RequestContext req = RequestContext.ParseRequest(input);
+            RequestContext req = EndpointHandler.ParseRequest(input);
+            EndpointHandler.HandleRequest(req);
+
+            Console.ForegroundColor = ConsoleColor.Green;
             req.Print();
+            Console.ForegroundColor = ConsoleColor.White;
 
         }
 
