@@ -6,6 +6,7 @@ namespace SWE1_REST_HTTP_Webservices
 {
     public class Response
     {
+        public string HttpVersion { get; set; }
         public int Status { get; set; }
         public string StatusMessage { get; set; }
         public Dictionary<string, string> Headers { get; set; }
@@ -13,32 +14,67 @@ namespace SWE1_REST_HTTP_Webservices
 
         public Response(int status, string statusMessage)
         {
+            HttpVersion = "HTTP/1.1";
             Status = status;
             StatusMessage = statusMessage;
+            Headers = new Dictionary<string, string>();
+            Headers.Add("Content-Type", "plain/text");
+            Headers.Add("Content-Length", "0");
             Body = null;
         }
 
         public Response(int status, string statusMessage, string body)
         {
+            HttpVersion = "HTTP/1.1";
             Status = status;
             StatusMessage = statusMessage;
+            Headers = new Dictionary<string, string>();
+            Headers.Add("Content-Type", "plain/text");
+            Headers.Add("Content-Length", body.Length.ToString());
             Body = body;
         }
 
-        /*        public void Print()
-                {
-                    Console.WriteLine("{0} {1}", Status, StatusMessage);
-                }*/
-
-        public String PrepareAsString()
+        public string ToString()
         {
+            // format of answer with or without body
+            // with body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 0\r\n";
+            // without body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 5\r\n\r\n12345";
 
-            string textohnebody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 15\r\n";
-            string textmitbody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 5\r\n\r\n12345";
+            StringBuilder data = new StringBuilder();
 
+            // add first line
+            data.Append(HttpVersion);
+            data.Append(" ");
+            data.Append(Status);
+            data.Append(" ");
+            data.Append(StatusMessage);
+            data.Append("\r\n");
 
-            return "text";
+            // add all headers
+            data.Append(GetHeaders());
+
+            // add body if nescessary
+            if (Body != null)
+            {
+                data.Append("\r\n");
+                data.Append(Body);
+            }
+            return data.ToString();
         }
+
+        private string GetHeaders()
+        {
+            StringBuilder allHeaders = new StringBuilder();
+            foreach (var header in Headers)
+            {
+                allHeaders.Append(header.Key);
+                allHeaders.Append(": ");
+                allHeaders.Append(header.Value);
+                allHeaders.Append("\r\n");
+            }
+            return allHeaders.ToString();
+        }
+
         public void Print()
         {
             Console.WriteLine("Response:");

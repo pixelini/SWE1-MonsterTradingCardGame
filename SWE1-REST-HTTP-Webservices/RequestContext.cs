@@ -62,7 +62,7 @@ namespace SWE1_REST_HTTP_Webservices
             }
 
             Console.WriteLine(
-                "My RequestContext object:\n\n" +
+                "RequestContext object:\n" +
                 "Method: {0}\n" +
                 "ResourcePath: {1}\n" +
                 "HttpVersion: {2}\n\n" +
@@ -79,6 +79,8 @@ namespace SWE1_REST_HTTP_Webservices
             {
                 Console.WriteLine(String.Format("Key: {0, -20} Value: {1, -20} ", header.Key, header.Value)); // right aligned with -
             }
+
+            Console.WriteLine();
 
         }
 

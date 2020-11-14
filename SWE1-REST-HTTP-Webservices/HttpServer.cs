@@ -50,47 +50,39 @@ namespace SWE1_REST_HTTP_Webservices
             input = Encoding.ASCII.GetString(buffer, 0, bufferRead); // get string from byte array
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Received Data: \n" + input);
+            Console.WriteLine("Received Data: \n" + input + "\n");
             Console.ForegroundColor = ConsoleColor.White;
 
             RequestContext req = EndpointHandler.ParseRequest(input);
 
             if (req != null)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
+                //Console.ForegroundColor = ConsoleColor.Green;
                 req.Print();
-                Console.ForegroundColor = ConsoleColor.White;
+                //Console.ForegroundColor = ConsoleColor.White;
 
                 Response response = EndpointHandler.HandleRequest(req);
                 
-                
-                
-
-                // Request ended
-                WriteResponse(connection);
+                // Send Response
+                SendResponse(connection, response);
             }
 
         }
 
-        private void WriteResponse(TcpClient connection)
+        private void SendResponse(TcpClient connection, Response response)
         {
             NetworkStream dataStream = connection.GetStream();
 
             // Writing response to the client
-            //string text = "This is my response"; // later: create Response!
+            Console.ForegroundColor = ConsoleColor.Green;
+            response.Print();
+            Console.ForegroundColor = ConsoleColor.White;
 
-           string textohnebody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 15\r\n";
-           string textmitbody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 5\r\n\r\n12345";
-
-            Console.WriteLine(textmitbody);
-
-
-
-            byte[] response = Encoding.ASCII.GetBytes(textmitbody);
+            byte[] responseData = Encoding.ASCII.GetBytes(response.ToString());
 
             try
             {
-                dataStream.Write(response, 0, response.Length);
+                dataStream.Write(responseData, 0, responseData.Length);
                 dataStream.Close();
                 connection.Close();
             }

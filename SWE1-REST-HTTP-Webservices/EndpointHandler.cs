@@ -73,7 +73,10 @@ namespace SWE1_REST_HTTP_Webservices
                 while (indexPayload < lines.Length)
                 {
                     sb.Append(lines[indexPayload]);
-                    sb.Append('\n');
+
+                    if (indexPayload < lines.Length - 1) { //last line has already a \n
+                        sb.Append('\n');
+                    }
                     indexPayload++;
                 }
                 payload = sb.ToString();
@@ -97,23 +100,18 @@ namespace SWE1_REST_HTTP_Webservices
                 {
                     case Action.LIST:
                         response = HandleList(req);
-                        response.Print();
                         break;
                     case Action.ADD:
                         response = HandleAdd(req);
-                        response.Print();
                         break;
                     case Action.READ:
                         response = HandleRead(req);
-                        response.Print();
                         break;
                     case Action.UPDATE:
                         response = HandleUpdate(req);
-                        response.Print();
                         break;
                     case Action.DELETE:
                         response = HandleDelete(req);
-                        response.Print();
                         break;
                     default:
                         Console.WriteLine("Request in not valid");
@@ -147,10 +145,10 @@ namespace SWE1_REST_HTTP_Webservices
             {
                 data.Append("ID ");
                 data.Append(message.ID);
-                data.Append(": \n");
+                data.Append(":\n");
                 data.Append(message.Content);
-                data.Append("\n");
-                Console.WriteLine(message.ID + ": " + message.Content);
+                data.Append("\n\n");
+                //Console.WriteLine(message.ID + ": " + message.Content);
             }
 
             return new Response(200, "OK", data.ToString());
@@ -179,7 +177,6 @@ namespace SWE1_REST_HTTP_Webservices
                 if (message.ID == msgID)
                 {
                     msgFound = true;   
-                    message.Print();
                     return new Response(200, "OK", message.Content);
                 }
             }
