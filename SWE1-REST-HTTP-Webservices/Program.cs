@@ -33,10 +33,10 @@ namespace SWE1_REST_HTTP_Webservices
 
             
 
-            Response res = new Response();
+/*            Response res = new Response();
             res.Status = 200;
             res.StatusMessage = "OK";
-            res.Print();
+            res.Print();*/
 
             
 

@@ -32,7 +32,7 @@ namespace SWE1_REST_HTTP_Webservices
                 Console.WriteLine("Connected!\n");
 
                 ReceiveRequests(connection);
-                WriteResponse(connection);
+                //WriteResponse(connection);
                 connection.Close();
             }
 
@@ -57,10 +57,17 @@ namespace SWE1_REST_HTTP_Webservices
 
             if (req != null)
             {
-                EndpointHandler.HandleRequest(req);
                 Console.ForegroundColor = ConsoleColor.Green;
                 req.Print();
                 Console.ForegroundColor = ConsoleColor.White;
+
+                Response response = EndpointHandler.HandleRequest(req);
+                
+                
+                
+
+                // Request ended
+                WriteResponse(connection);
             }
 
         }
@@ -70,9 +77,16 @@ namespace SWE1_REST_HTTP_Webservices
             NetworkStream dataStream = connection.GetStream();
 
             // Writing response to the client
-            string text = "This is my response"; // later: create Response!
+            //string text = "This is my response"; // later: create Response!
 
-            byte[] response = Encoding.ASCII.GetBytes(text);
+           string textohnebody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 15\r\n";
+           string textmitbody = "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 5\r\n\r\n12345";
+
+            Console.WriteLine(textmitbody);
+
+
+
+            byte[] response = Encoding.ASCII.GetBytes(textmitbody);
 
             try
             {
@@ -86,5 +100,7 @@ namespace SWE1_REST_HTTP_Webservices
             }
 
         }
+
+
     }
 }

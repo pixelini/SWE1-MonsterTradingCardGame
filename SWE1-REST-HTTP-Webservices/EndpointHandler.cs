@@ -87,26 +87,33 @@ namespace SWE1_REST_HTTP_Webservices
 
         }
         
-        public void HandleRequest(RequestContext req)
+        public Response HandleRequest(RequestContext req)
         {
+            Response response = null;
+
             if (req != null)
             {
                 switch (req.Action)
                 {
                     case Action.LIST:
-                        HandleList(req);
+                        response = HandleList(req);
+                        response.Print();
                         break;
                     case Action.ADD:
-                        HandleAdd(req);
+                        response = HandleAdd(req);
+                        response.Print();
                         break;
                     case Action.READ:
-                        HandleRead(req);
+                        response = HandleRead(req);
+                        response.Print();
                         break;
                     case Action.UPDATE:
-                        HandleUpdate(req);
+                        response = HandleUpdate(req);
+                        response.Print();
                         break;
                     case Action.DELETE:
-                        HandleDelete(req);
+                        response = HandleDelete(req);
+                        response.Print();
                         break;
                     default:
                         Console.WriteLine("Request in not valid");
@@ -116,29 +123,51 @@ namespace SWE1_REST_HTTP_Webservices
             {
                 Console.WriteLine("Object is not initialised.");
             }
-            
+
+            if (response == null)
+            {
+                response = new Response(400, "Bad Request");
+            }
+
+            return response;
 
         }
 
-        private void HandleList(RequestContext req)
+        private Response HandleList(RequestContext req)
         {
+            if (Messages.Count == 0)
+            {
+                return new Response(200, "OK", "No messages have been sent yet.");
+            }
+
+            StringBuilder data = new StringBuilder();
+
             Console.WriteLine("\nHandle List...\n");
             foreach (var message in Messages)
             {
+                data.Append("ID ");
+                data.Append(message.ID);
+                data.Append(": \n");
+                data.Append(message.Content);
+                data.Append("\n");
                 Console.WriteLine(message.ID + ": " + message.Content);
             }
+
+            return new Response(200, "OK", data.ToString());
         }
 
-        private void HandleAdd(RequestContext req)
+        private Response HandleAdd(RequestContext req)
         {
             Console.WriteLine("\nHandle Add...\n");
             Counter++;
             Message inputMessage = new Message(Counter, req.Payload);
             Messages.Add(inputMessage);
             Console.WriteLine("New message added.\n");
+
+            return new Response(201, "Created", "ID: " + Counter.ToString());
         }
 
-        private void HandleRead(RequestContext req)
+        private Response HandleRead(RequestContext req)
         {
             Console.WriteLine("\nHandle Read...\n");
             bool msgFound = false;
@@ -149,20 +178,23 @@ namespace SWE1_REST_HTTP_Webservices
             {
                 if (message.ID == msgID)
                 {
-                    msgFound = true;
+                    msgFound = true;   
                     message.Print();
+                    return new Response(200, "OK", message.Content);
                 }
             }
 
             if (!msgFound)
             {
-                // message not found! 404?
                 Console.WriteLine("Message not found! Reading not possible!\n");
+                return new Response(404, "Not Found");
             }
+
+            return null;
 
         }
 
-        private void HandleUpdate(RequestContext req)
+        private Response HandleUpdate(RequestContext req)
         {
             Console.WriteLine("\nHandle Update...\n");
             bool msgFound = false;
@@ -175,18 +207,21 @@ namespace SWE1_REST_HTTP_Webservices
                 {
                     msgFound = true;
                     message.Update(req.Payload);
+                    return new Response(200, "OK");
                 }
             }
 
             if (!msgFound)
             {
-                // message not found! 404?
                 Console.WriteLine("Message not found! Updating not possible!\n");
+                return new Response(404, "Not Found");
             }
+
+            return null;
 
         }
 
-        private void HandleDelete(RequestContext req)
+        private Response HandleDelete(RequestContext req)
         {
             Console.WriteLine("\nHandle Delete...\n");
             bool msgFound = false;
@@ -200,14 +235,18 @@ namespace SWE1_REST_HTTP_Webservices
                     //Console.WriteLine("TO DELETE: " + Messages[i].Content);
                     msgFound = true;
                     Messages.Remove(Messages[i]);
+                    return new Response(200, "OK");
                 }           
             }
 
             if (!msgFound)
             {
                 Console.WriteLine("Message not found! Deleting not possible!\n");
+                return new Response(404, "Not Found");
             }
-        
+
+            return null;
+
         }
 
         private Action IsValidRequest(string method, string resource)
