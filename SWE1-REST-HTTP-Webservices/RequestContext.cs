@@ -23,6 +23,7 @@ namespace SWE1_REST_HTTP_Webservices
             Headers = new Dictionary<string, string>();
             Payload = null;
         }
+
         public RequestContext(string method, string resourcePath, string httpVersion, Dictionary<string, string> headers, string payload)
         {
 

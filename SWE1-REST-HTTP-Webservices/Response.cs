@@ -47,8 +47,8 @@ namespace SWE1_REST_HTTP_Webservices
         public string ToString()
         {
             // format of answer with or without body
-            // with body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 0\r\n";
-            // without body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\nContent-Length: 5\r\n\r\n12345";
+            // with body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
+            // without body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\n12345";
 
             StringBuilder data = new StringBuilder();
 
