@@ -11,8 +11,8 @@ namespace SWE1_REST_HTTP_Webservices
     public class HttpServer
     {
         public bool Running = false;
-        private readonly IListener Listener;
-        private readonly IEndpointHandler EndpointHandler;
+        private readonly IListener _listener;
+        private readonly IEndpointHandler _endpointHandler;
         public string MessagePath { get; set; }
 
 
@@ -20,7 +20,7 @@ namespace SWE1_REST_HTTP_Webservices
         {
             try
             {
-                Listener = new Listener(addr, port);
+                _listener = new Listener(addr, port);
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -32,15 +32,15 @@ namespace SWE1_REST_HTTP_Webservices
             }
 
             MessagePath = messagePath;
-            EndpointHandler = new EndpointHandler(ref messages);
+            _endpointHandler = new EndpointHandler(ref messages);
 
         }
 
         // only for mocking purpose
         public HttpServer(IPAddress addr, int port, string messagePath, IEndpointHandler endpointHandler)
         {
-            Listener = new Listener(addr, port);
-            EndpointHandler = endpointHandler;
+            _listener = new Listener(addr, port);
+            _endpointHandler = endpointHandler;
             MessagePath = messagePath;
         }
 
@@ -48,19 +48,19 @@ namespace SWE1_REST_HTTP_Webservices
         {
             try
             {
-                Listener.Start();
+                _listener.Start();
                 Running = true;
 
                 while (Running)
                 {
                     Console.WriteLine("\nWaiting for connection...");
-                    IClient connection = Listener.AcceptTcpClient();
+                    IClient connection = _listener.AcceptTcpClient();
                     Console.WriteLine("Connected!\n");
                     ProcessRequest(connection);
                 }
 
                 Running = false;
-                Listener.Stop();
+                _listener.Stop();
             }
             catch (SocketException ex)
             {
@@ -85,7 +85,7 @@ namespace SWE1_REST_HTTP_Webservices
                 request.Action = action;
                 request.Print(); // if not null, print! --> clever alternative: request?.Print(); :D
             }      
-            Response response = EndpointHandler.HandleRequest(request);
+            Response response = _endpointHandler.HandleRequest(request);
 
             // Send Response
             connection.SendResponse(response);

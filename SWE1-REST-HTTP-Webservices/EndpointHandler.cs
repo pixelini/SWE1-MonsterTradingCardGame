@@ -6,14 +6,14 @@ namespace SWE1_REST_HTTP_Webservices
 {
     public class EndpointHandler : IEndpointHandler
     {
-        List<Message> Messages;
-        private int Counter;
+        private List<Message> _messages;
+        private int _counter;
 
 
         public EndpointHandler(ref List<Message> messages)
         {
-            Messages = messages;
-            Counter = 0;
+            _messages = messages;
+            _counter = 0;
         }
         
         public Response HandleRequest(RequestContext req)
@@ -56,7 +56,7 @@ namespace SWE1_REST_HTTP_Webservices
 
         private Response HandleList(RequestContext req)
         {
-            if (Messages.Count == 0)
+            if (_messages.Count == 0)
             {
                 return new Response(200, "OK", "No messages have been sent yet.");
             }
@@ -64,7 +64,7 @@ namespace SWE1_REST_HTTP_Webservices
             StringBuilder data = new StringBuilder();
 
             Console.WriteLine("\nHandle List...\n");
-            foreach (var message in Messages)
+            foreach (var message in _messages)
             {
                 data.Append("ID ");
                 data.Append(message.ID);
@@ -80,12 +80,12 @@ namespace SWE1_REST_HTTP_Webservices
         private Response HandleAdd(RequestContext req)
         {
             Console.WriteLine("\nHandle Add...\n");
-            Counter++;
-            Message inputMessage = new Message(Counter, req.Payload);
-            Messages.Add(inputMessage);
+            _counter++;
+            Message inputMessage = new Message(_counter, req.Payload);
+            _messages.Add(inputMessage);
             Console.WriteLine("New message added.\n");
 
-            return new Response(201, "Created", "ID: " + Counter.ToString());
+            return new Response(201, "Created", "ID: " + _counter.ToString());
         }
 
         private Response HandleRead(RequestContext req)
@@ -95,7 +95,7 @@ namespace SWE1_REST_HTTP_Webservices
             int msgID = GetMsgIDFromPath(req.ResourcePath); 
 
             // search in messages if message id exists
-            foreach (var message in Messages)
+            foreach (var message in _messages)
             {
                 if (message.ID == msgID)
                 {
@@ -121,7 +121,7 @@ namespace SWE1_REST_HTTP_Webservices
             int msgID = GetMsgIDFromPath(req.ResourcePath);
 
             // search in messages if message id exists
-            foreach (var message in Messages)
+            foreach (var message in _messages)
             {
                 if (message.ID == msgID)
                 {
@@ -148,13 +148,13 @@ namespace SWE1_REST_HTTP_Webservices
             int msgID = GetMsgIDFromPath(req.ResourcePath);
 
             // search in messages if message id exists
-            for (int i = 0; i < Messages.Count; i++)
+            for (int i = 0; i < _messages.Count; i++)
             {
-                if (Messages[i].ID == msgID)
+                if (_messages[i].ID == msgID)
                 {
                     //Console.WriteLine("TO DELETE: " + Messages[i].Content);
                     msgFound = true;
-                    Messages.Remove(Messages[i]);
+                    _messages.Remove(_messages[i]);
                     return new Response(200, "OK");
                 }           
             }

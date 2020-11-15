@@ -8,19 +8,19 @@ namespace SWE1_REST_HTTP_Webservices
 {
     class Client : IClient
     {
-        private TcpClient Connection { get; set; }
+        private TcpClient _connection { get; set; }
 
 
         public Client(TcpClient connection)
         {
-            Connection = connection;
+            _connection = connection;
         }
 
         public RequestContext ReceiveRequest()
         {
             try
             {
-                NetworkStream dataStream = Connection.GetStream();
+                NetworkStream dataStream = _connection.GetStream();
 
                 byte[] buffer = new byte[2048];
                 int bufferRead = dataStream.Read(buffer, 0, buffer.Length);
@@ -47,7 +47,7 @@ namespace SWE1_REST_HTTP_Webservices
         {
             try
             {
-                NetworkStream dataStream = Connection.GetStream();
+                NetworkStream dataStream = _connection.GetStream();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine(response.ConvertToString());
                 Console.ForegroundColor = ConsoleColor.White;
@@ -57,7 +57,7 @@ namespace SWE1_REST_HTTP_Webservices
                 // Writing response to the client
                 dataStream.Write(responseData, 0, responseData.Length);
                 dataStream.Close();
-                Connection.Close();
+                _connection.Close();
             }
             catch (Exception ex)
             {
