@@ -64,7 +64,7 @@ namespace SWE1_REST_HTTP_Webservices
             data.Append(GetHeaders());
             data.Append("\r\n");
 
-            // add body if nescessary
+            // add body if necessary
             if (Body != null)
             {
                 data.Append(Body);

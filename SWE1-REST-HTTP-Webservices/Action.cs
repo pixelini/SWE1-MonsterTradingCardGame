@@ -6,11 +6,11 @@ namespace SWE1_REST_HTTP_Webservices
 {
     public enum Action
     {
-        LIST,
-        ADD,
-        READ,
-        UPDATE,
-        DELETE,
-        UNDEFINED
+        List,
+        Add,
+        Read,
+        Update,
+        Delete,
+        Undefined
     }
 }

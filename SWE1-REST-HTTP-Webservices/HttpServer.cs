@@ -11,8 +11,8 @@ namespace SWE1_REST_HTTP_Webservices
     public class HttpServer
     {
         public bool Running = false;
-        private IListener Listener;
-        private IEndpointHandler EndpointHandler;
+        private readonly IListener Listener;
+        private readonly IEndpointHandler EndpointHandler;
         public string MessagePath { get; set; }
 
 
@@ -71,33 +71,33 @@ namespace SWE1_REST_HTTP_Webservices
         {
             if (req == null)
             {
-                return Action.UNDEFINED;
+                return Action.Undefined;
             }
             // check if first line contains required information for all http methods
-            if (req.Method == HttpVerb.GET && req.ResourcePath == MessagePath)
+            if (req.Method == HttpVerb.Get && req.ResourcePath == MessagePath)
             {
-                return Action.LIST;
+                return Action.List;
             }
-            else if (req.Method == HttpVerb.POST && req.ResourcePath == MessagePath)
+            else if (req.Method == HttpVerb.Post && req.ResourcePath == MessagePath)
             {
-                return Action.ADD;
+                return Action.Add;
             }
-            else if (req.Method == HttpVerb.GET && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Get && IsValidPathWithMsgID(req.ResourcePath))
             {
-                return Action.READ;
+                return Action.Read;
             }
-            else if (req.Method == HttpVerb.PUT && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Put && IsValidPathWithMsgID(req.ResourcePath))
             {
-                return Action.UPDATE;
+                return Action.Update;
             }
-            else if (req.Method == HttpVerb.DELETE && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Delete && IsValidPathWithMsgID(req.ResourcePath))
             {
-                return Action.DELETE;
+                return Action.Delete;
             }
             else
             {
                 Console.WriteLine("Not a valid request!");
-                return Action.UNDEFINED;
+                return Action.Undefined;
             }
 
         }

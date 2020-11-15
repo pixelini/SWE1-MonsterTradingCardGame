@@ -22,7 +22,9 @@ namespace SWE1_REST_HTTP_Webservices
             HttpServer server = new HttpServer(IPAddress.Loopback, 6789, pathToMessages, ref messages);
             server.Run();
 
+
         }
+
     }
 
 }

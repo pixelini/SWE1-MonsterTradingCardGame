@@ -28,19 +28,19 @@ namespace SWE1_REST_HTTP_Webservices
 
             switch (req.Action)
             {
-                case Action.LIST:
+                case Action.List:
                     response = HandleList(req);
                     break;
-                case Action.ADD:
+                case Action.Add:
                     response = HandleAdd(req);
                     break;
-                case Action.READ:
+                case Action.Read:
                     response = HandleRead(req);
                     break;
-                case Action.UPDATE:
+                case Action.Update:
                     response = HandleUpdate(req);
                     break;
-                case Action.DELETE:
+                case Action.Delete:
                     response = HandleDelete(req);
                     break;
                 default:
@@ -173,7 +173,7 @@ namespace SWE1_REST_HTTP_Webservices
         private int GetMsgIDFromPath(string path)
         {
             string msgName = System.IO.Path.GetFileName(path);
-            int msgID = Int32.Parse(msgName); // is possible because regex has already validated path and message number
+            int msgID = int.Parse(msgName); // is possible because regex has already validated path and message number
             return msgID;
         }
 

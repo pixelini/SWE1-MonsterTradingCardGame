@@ -5,6 +5,7 @@ using System.Text;
 using SWE1_REST_HTTP_Webservices;
 using Moq;
 using System.Net;
+using Action = SWE1_REST_HTTP_Webservices.Action; // because Action is also used in another context
 
 namespace UnitTests
 {
@@ -30,10 +31,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsListAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.LIST;
+            var correctAction = Action.List;
             var request = new RequestContext
             {
-                Method = HttpVerb.GET,
+                Method = HttpVerb.Get,
                 ResourcePath = "/messages",
             };
 
@@ -51,10 +52,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsAddAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.ADD;
+            var correctAction = Action.Add;
             var request = new RequestContext
             {
-                Method = HttpVerb.POST,
+                Method = HttpVerb.Post,
                 ResourcePath = "/messages",
             };
 
@@ -72,10 +73,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsReadAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.READ;
+            var correctAction = Action.Read;
             var request = new RequestContext
             {
-                Method = HttpVerb.GET,
+                Method = HttpVerb.Get,
                 ResourcePath = "/messages/1",
             };
 
@@ -93,10 +94,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsUpdateAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.UPDATE;
+            var correctAction = Action.Update;
             var request = new RequestContext
             {
-                Method = HttpVerb.PUT,
+                Method = HttpVerb.Put,
                 ResourcePath = "/messages/1",
             };
 
@@ -114,10 +115,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsDeleteAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.DELETE;
+            var correctAction = Action.Delete;
             var request = new RequestContext
             {
-                Method = HttpVerb.DELETE,
+                Method = HttpVerb.Delete,
                 ResourcePath = "/messages/1",
             };
 
@@ -134,10 +135,10 @@ namespace UnitTests
         public void Test_ProcessRequest_ReturnsUndefinedAction()
         {
             // Arrange
-            var correctAction = SWE1_REST_HTTP_Webservices.Action.UNDEFINED;
+            var correctAction = Action.Undefined;
             var request = new RequestContext
             {
-                Method = HttpVerb.DELETE,
+                Method = HttpVerb.Delete,
                 ResourcePath = "/not/valid",
             };
 

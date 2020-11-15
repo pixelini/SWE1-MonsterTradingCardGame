@@ -16,8 +16,8 @@ namespace SWE1_REST_HTTP_Webservices
 
         public RequestContext()
         {
-            Action = Action.UNDEFINED;
-            Method = HttpVerb.GET;
+            Action = Action.Undefined;
+            Method = HttpVerb.Get;
             ResourcePath = "";
             HttpVersion = "HTTP/1.1";
             Headers = new Dictionary<string, string>();
@@ -28,16 +28,16 @@ namespace SWE1_REST_HTTP_Webservices
 
             if (method == "GET")
             {
-                Method = HttpVerb.GET;
+                Method = HttpVerb.Get;
             } else if (method == "PUT")
             {
-                Method = HttpVerb.PUT;
+                Method = HttpVerb.Put;
             } else if (method == "POST")
             {
-                Method = HttpVerb.POST;
+                Method = HttpVerb.Post;
             } else if (method == "DELETE")
             {
-                Method = HttpVerb.DELETE;
+                Method = HttpVerb.Delete;
             } else
             {
                 return;
@@ -46,7 +46,7 @@ namespace SWE1_REST_HTTP_Webservices
             ResourcePath = resourcePath;
             HttpVersion = httpVersion;
             Headers = headers;
-            Action = Action.UNDEFINED;
+            Action = Action.Undefined;
 
             if (payload == "" || payload == "\n")
             {
@@ -60,13 +60,13 @@ namespace SWE1_REST_HTTP_Webservices
 
         public void Print()
         {
-            string payloadinfo = "";
+            string payloadInfo = "";
             if (Payload == null)
             {
-                payloadinfo = "not defined";
+                payloadInfo = "not defined";
             } else
             {
-                payloadinfo = Payload;
+                payloadInfo = Payload;
             }
 
             Console.WriteLine(
@@ -78,14 +78,14 @@ namespace SWE1_REST_HTTP_Webservices
                 Method, 
                 ResourcePath, 
                 HttpVersion,
-                payloadinfo
+                payloadInfo
                 );
 
             Console.WriteLine("Headers: ");
 
             foreach (var header in Headers)
             {
-                Console.WriteLine(String.Format("Key: {0, -20} Value: {1, -20} ", header.Key, header.Value)); // right aligned with -
+                Console.WriteLine($"Key: {header.Key,-20} Value: {header.Value,-20} "); // right aligned with -
             }
 
             Console.WriteLine();

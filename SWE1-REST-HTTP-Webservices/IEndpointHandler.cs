@@ -31,12 +31,6 @@ namespace SWE1_REST_HTTP_Webservices
                 string[] splittedHeaders = lines[i].Split(':', 2);
                 headers.Add(splittedHeaders[0], splittedHeaders[1].Trim()); // trim whitespace after value --> exception?
                 i += 2;
-
-                /*                if ((lines[i] == "") && (action == Action.ADD || action == Action.UPDATE))
-                                {
-                                    hasPayload = true;
-
-                                }*/
             }
 
             // check if MIME-Type is valid

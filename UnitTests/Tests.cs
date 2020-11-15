@@ -12,29 +12,17 @@ namespace UnitTests
         }
 
         [Test]
-        public void StatusIsValid()
+        public void MessageUpdate()
         {
             // Arrange
-            //Status myStatus = new Status(200, "OK");
-
-            // Act
-            //var code = myStatus.Code;
-
-            // Assert
-            
-        }
-        public void MessageRead()
-        {
-/*            // Arrange
-            Message myMessage = new Message();
-            myMessage.Content = "This is my text.";
+            Message myMessage = new Message(1, "Hello");
 
             // Act
             var newContent = "Message changed.";
             myMessage.Update(newContent);
 
             // Assert
-            Assert.That(myMessage.Content == newContent);*/
+            Assert.AreEqual(myMessage.Content, newContent);
         }
 
 
