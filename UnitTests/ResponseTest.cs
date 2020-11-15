@@ -42,7 +42,7 @@ namespace UnitTests
             string correctResponseString = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
 
             // Act
-            string responseString = response.ToString();
+            string responseString = response.ConvertToString();
 
             // Assert
             Assert.AreEqual(correctResponseString, responseString);
@@ -64,7 +64,7 @@ namespace UnitTests
             string correctResponseString = "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nID: 6";
 
             // Act
-            string responseString = response.ToString();
+            string responseString = response.ConvertToString();
 
             // Assert
             Assert.AreEqual(correctResponseString, responseString);

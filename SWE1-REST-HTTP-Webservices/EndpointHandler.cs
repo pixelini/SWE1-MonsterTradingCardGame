@@ -9,6 +9,7 @@ namespace SWE1_REST_HTTP_Webservices
         List<Message> Messages;
         private int Counter;
 
+
         public EndpointHandler(ref List<Message> messages)
         {
             Messages = messages;
@@ -167,8 +168,6 @@ namespace SWE1_REST_HTTP_Webservices
             return null;
 
         }
-
-        
 
         private int GetMsgIDFromPath(string path)
         {

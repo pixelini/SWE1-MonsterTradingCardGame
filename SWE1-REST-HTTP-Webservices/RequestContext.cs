@@ -14,6 +14,7 @@ namespace SWE1_REST_HTTP_Webservices
         public Dictionary<string, string> Headers { get; set; }
         public string Payload { get; set; }
 
+
         public RequestContext()
         {
             Action = Action.Undefined;
@@ -58,7 +59,6 @@ namespace SWE1_REST_HTTP_Webservices
             }
             
         }
-
         public void Print()
         {
             string payloadInfo = "";

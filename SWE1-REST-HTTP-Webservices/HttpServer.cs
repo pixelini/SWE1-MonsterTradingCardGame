@@ -18,12 +18,25 @@ namespace SWE1_REST_HTTP_Webservices
 
         public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages)
         {
-            Listener = new Listener(addr, port);
+            try
+            {
+                Listener = new Listener(addr, port);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                Console.WriteLine("Problem with arguments" + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("There was a problem: " + ex.Message);
+            }
+
             MessagePath = messagePath;
             EndpointHandler = new EndpointHandler(ref messages);
+
         }
 
-        // for mocking
+        // only for mocking purpose
         public HttpServer(IPAddress addr, int port, string messagePath, IEndpointHandler endpointHandler)
         {
             Listener = new Listener(addr, port);
@@ -33,25 +46,37 @@ namespace SWE1_REST_HTTP_Webservices
 
         public void Run()
         {
-            Listener.Start();
-            Running = true;
-
-            while (Running)
+            try
             {
-                Console.WriteLine("\nWaiting for connection...");
-                IClient connection = Listener.AcceptTcpClient();
-                Console.WriteLine("Connected!\n");
-                ProcessRequest(connection);
+                Listener.Start();
+                Running = true;
+
+                while (Running)
+                {
+                    Console.WriteLine("\nWaiting for connection...");
+                    IClient connection = Listener.AcceptTcpClient();
+                    Console.WriteLine("Connected!\n");
+                    ProcessRequest(connection);
+                }
+
+                Running = false;
+                Listener.Stop();
             }
-
-            Running = false;
-            Listener.Stop();
+            catch (SocketException ex)
+            {
+                Console.WriteLine("Connection error occurred: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("There was a problem: " + ex.Message);
+            }
+            
         }
-
         public void ProcessRequest(IClient connection)
         {
+           
             RequestContext request = connection.ReceiveRequest();
-
+            
             // Handle Request
             Action action = GetRequestedAction(request);
 
@@ -65,7 +90,6 @@ namespace SWE1_REST_HTTP_Webservices
             // Send Response
             connection.SendResponse(response);
         }
-
 
         public Action GetRequestedAction(RequestContext req)
         {

@@ -14,14 +14,21 @@ namespace SWE1_REST_HTTP_Webservices
 
         static void Main(string[] args)
         {
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine("Starting server...");
-            List<Message> messages = new List<Message>();
 
-            string pathToMessages = "/messages";
-            HttpServer server = new HttpServer(IPAddress.Loopback, 6789, pathToMessages, ref messages);
-            server.Run();
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("Starting server...");
+                List<Message> messages = new List<Message>();
 
+                string pathToMessages = "/messages";
+                HttpServer server = new HttpServer(IPAddress.Loopback, 6789, pathToMessages, ref messages);
+                server.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("There was a problem: " + ex.Message);
+            }
 
         }
 

@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="SWE1_REST_HTTP_Webservices.EndpointHandler">
+    <Position X="4.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACgAAAAMZCABAAAAgAAAAAQAAAAAAAAwAAQAAgAA=</HashCode>
+      <FileName>EndpointHandler.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SWE1_REST_HTTP_Webservices.HttpServer">
+    <Position X="8.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAFAAAAAAAAAAAAIAAAAAAAAAAACIAAAAAAAAAAI=</HashCode>
+      <FileName>HttpServer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SWE1_REST_HTTP_Webservices.Message">
+    <Position X="10" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAgAAgAAAAAAAAAAAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Message.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SWE1_REST_HTTP_Webservices.Program">
+    <Position X="6.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Program.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SWE1_REST_HTTP_Webservices.RequestContext">
+    <Position X="10" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAAAAAAAAwAAAACAAAAAAAAAAAAAQEAAQ=</HashCode>
+      <FileName>RequestContext.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SWE1_REST_HTTP_Webservices.Response">
+    <Position X="11.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAECAABAAAACAAAAAAAAAAAAIQEAAA=</HashCode>
+      <FileName>Response.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="SWE1_REST_HTTP_Webservices.Action">
+    <Position X="6.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAYAgAAAAAIAAAAAAAAAAAAAAAAAACAA=</HashCode>
+      <FileName>Action.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="SWE1_REST_HTTP_Webservices.HttpVerb">
+    <Position X="11.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIAAAAAAAEAQAAAAAAAAAAAAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>HttpVerb.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

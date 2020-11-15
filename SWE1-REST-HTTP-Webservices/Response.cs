@@ -12,6 +12,7 @@ namespace SWE1_REST_HTTP_Webservices
         public Dictionary<string, string> Headers { get; set; }
         public string Body { get; set; }
 
+
         public Response()
         {
             HttpVersion = "HTTP/1.1";
@@ -44,7 +45,7 @@ namespace SWE1_REST_HTTP_Webservices
             Body = body;
         }
 
-        public string ToString()
+        public string ConvertToString()
         {
             // format of answer with or without body
             // with body, e.g. "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
@@ -72,6 +73,12 @@ namespace SWE1_REST_HTTP_Webservices
             return data.ToString();
         }
 
+        public void Print()
+        {
+            Console.WriteLine("Response:");
+            Console.WriteLine("{0} {1}\n\n{2}", Status, StatusMessage, Body);
+        }
+
         private string GetHeaders()
         {
             StringBuilder allHeaders = new StringBuilder();
@@ -85,13 +92,7 @@ namespace SWE1_REST_HTTP_Webservices
             return allHeaders.ToString();
         }
 
-        public void Print()
-        {
-            Console.WriteLine("Response:");
-            Console.WriteLine("{0} {1}\n\n{2}", Status, StatusMessage, Body);
-        }
-
-
+        
     }
 }
 
