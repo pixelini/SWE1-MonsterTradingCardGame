@@ -1,9 +1,9 @@
 ﻿using NUnit.Framework;
-using SWE1_REST_HTTP_Webservices;
+using HttpRestServer;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Action = SWE1_REST_HTTP_Webservices.Action;
+using Action = HttpRestServer.Action;
 
 namespace UnitTests
 {

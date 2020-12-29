@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SWE1-REST-HTTP-Webservices", "SWE1-REST-HTTP-Webservices\SWE1-REST-HTTP-Webservices.csproj", "{A4CED017-A6ED-4578-914B-89BC6D9690BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpRestServer", "HttpRestServer\HttpRestServer.csproj", "{A4CED017-A6ED-4578-914B-89BC6D9690BC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{929D324E-2B0B-4346-A3AF-6A85F877E938}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpRestServerUnitTests", "HttpRestServerUnitTests\HttpRestServerUnitTests.csproj", "{929D324E-2B0B-4346-A3AF-6A85F877E938}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mtcg", "Mtcg\Mtcg.csproj", "{0A011C3B-4C65-4275-A3A7-849EC7232603}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MtcgUnitTests", "MtcgUnitTests\MtcgUnitTests.csproj", "{0F893FA4-6D6F-40CB-9C4E-3FA6B9137FE7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{929D324E-2B0B-4346-A3AF-6A85F877E938}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{929D324E-2B0B-4346-A3AF-6A85F877E938}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{929D324E-2B0B-4346-A3AF-6A85F877E938}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A011C3B-4C65-4275-A3A7-849EC7232603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A011C3B-4C65-4275-A3A7-849EC7232603}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A011C3B-4C65-4275-A3A7-849EC7232603}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A011C3B-4C65-4275-A3A7-849EC7232603}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F893FA4-6D6F-40CB-9C4E-3FA6B9137FE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F893FA4-6D6F-40CB-9C4E-3FA6B9137FE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F893FA4-6D6F-40CB-9C4E-3FA6B9137FE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F893FA4-6D6F-40CB-9C4E-3FA6B9137FE7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

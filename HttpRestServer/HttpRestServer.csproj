@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>SWE1_REST_HTTP_Webservices</RootNamespace>
+    <RootNamespace>SWE1-MonsterTradingCardGame</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

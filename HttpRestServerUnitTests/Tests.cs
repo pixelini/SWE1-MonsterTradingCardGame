@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
-using SWE1_REST_HTTP_Webservices;
+using HttpRestServer;
 
 
 namespace UnitTests

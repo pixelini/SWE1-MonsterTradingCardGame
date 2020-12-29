@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace SWE1_REST_HTTP_Webservices
+namespace HttpRestServer
 {
     public class Listener : IListener
     {

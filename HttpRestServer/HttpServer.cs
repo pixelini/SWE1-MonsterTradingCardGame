@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace SWE1_REST_HTTP_Webservices
+namespace HttpRestServer
 {
     public class HttpServer
     {

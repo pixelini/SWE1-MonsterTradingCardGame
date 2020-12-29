@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using SWE1_REST_HTTP_Webservices;
+using HttpRestServer;
 using Moq;
 using System.Net;
-using Action = SWE1_REST_HTTP_Webservices.Action; // because Action is also used in another context
+using Action = HttpRestServer.Action; // because Action is also used in another context
 
 namespace UnitTests
 {

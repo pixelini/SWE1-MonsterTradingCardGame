@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using NUnit.Framework;
-using SWE1_REST_HTTP_Webservices;
+using HttpRestServer;
 
 namespace UnitTests
 {

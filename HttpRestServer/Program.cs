@@ -7,7 +7,7 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace SWE1_REST_HTTP_Webservices
+namespace HttpRestServer
 {
     class Program
     {

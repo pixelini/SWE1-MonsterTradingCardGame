@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SWE1_REST_HTTP_Webservices
+namespace HttpRestServer
 {
     public interface IClient
     {
