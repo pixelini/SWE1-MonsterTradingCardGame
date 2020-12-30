@@ -5,13 +5,9 @@ namespace Mtcg
     public interface ICard
     {
         string Name { get; }
-        int Damage { get; }
+        float Damage { get; }
 
         Element ElementType { get; }
-
-        bool Attack(AbstractMonster opponent);
-        bool Attack(Spell opponent);
-
 
 
     }

@@ -2,18 +2,20 @@
 
 namespace Mtcg.Cards
 {
-    public class Spell : ICard
+    public abstract class Monster : ICard
     {
         public string Name { get; }
         public float Damage { get; }
         public Element ElementType { get; }
 
-        public Spell(string name, float damage)
+
+        public Monster(string name, float damage)
         {
             this.Name = name;
             this.Damage = damage;
 
             // check if damage is between 20 and 120
+
             switch (1)
             {
                 case 1:
@@ -25,7 +27,7 @@ namespace Mtcg.Cards
                 case 3:
                     this.ElementType = Element.Normal;
                     break;
-                default:
+                default: 
                     break;
             }
 

@@ -2,16 +2,9 @@
 
 namespace Mtcg.Cards 
 {
-    public class Wizzard : AbstractMonster
+    public class Wizzard : Monster
     {
-        public Wizzard() : base("Wizzard") {}
+        public Wizzard(string name, float damage) : base(name, damage) { }
 
-        // Wizzard couldn't be damaged by Orks
-        public bool Attack(Ork opponent)
-        {
-            Console.WriteLine("My opponent is an Ork. He couldn't damage me.");
-            Console.WriteLine("I'm the winner!");
-            return true;
-        }
     }
 }

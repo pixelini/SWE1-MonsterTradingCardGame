@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Text;
 using Mtcg.Cards;
+using HttpRestServer;
 
 namespace Mtcg
 {
@@ -8,74 +12,57 @@ namespace Mtcg
         static void Main(string[] args)
         {
 
-            //Goblin gobo = new Goblin();
-            //Spell waterspell = new Spell();
-            //Wizzard wizi = new Wizzard();
 
-            //Console.WriteLine(gobo.Name);
-            //Console.WriteLine(gobo.Damage);
-            //Console.WriteLine(gobo.ElementType);
+            Goblin gobo = new Goblin("WaterGoblin", (float)50.0); //"e85e3976-7c86-4d06-9a80-641c2019a79f"
+            Spell spell = new Spell("RegularSpell", (float)50.0);
 
-            //Console.WriteLine();
+            Console.WriteLine(gobo);
+            Console.WriteLine(gobo.Name);
+            Console.WriteLine(gobo.Damage);
+            Console.WriteLine(gobo.ElementType);
+            Console.WriteLine(spell);
+            Console.WriteLine(spell.Name);
+            Console.WriteLine(spell.Damage);
+            Console.WriteLine(spell.ElementType);
 
-            //Console.WriteLine(waterspell.Name);
-            //Console.WriteLine(waterspell.Damage);
-            //Console.WriteLine(waterspell.ElementType);
 
-            //Console.WriteLine();
-
-            //Console.WriteLine(wizi.Name);
-            //Console.WriteLine(wizi.Damage);
-            //Console.WriteLine(wizi.ElementType);
-
-            //Console.WriteLine();
-
-            //gobo.Attack(waterspell);
-
-            //Console.WriteLine();
-
-            //gobo.Attack(wizi);
-
-            //Console.WriteLine();
-
-            //wizi.Attack(waterspell);
-
-            //waterspell.Attack(wizi);
-            //waterspell.Attack(gobo);
+            Guid myhash = System.Guid.NewGuid();
+            Guid myhash1 = System.Guid.NewGuid();
+            Guid myhash2 = System.Guid.NewGuid();
+            Console.WriteLine(myhash);
+            Console.WriteLine(myhash1);
+            Console.WriteLine(myhash2);
 
 
 
+            User elisabeth = new User();
+            Console.WriteLine(elisabeth);
 
 
 
-            Goblin gogo = new Goblin();
-            Dragon dragi = new Dragon();
-
-            gogo.Attack(dragi);
-
-
-            //Goblin gobo = new Goblin();
-            //Spell waterspell = new Spell();
-            //Wizzard wizi = new Wizzard();
-
-            //Console.WriteLine(gobo.Name);
-            //Console.WriteLine(gobo.Damage);
-            //Console.WriteLine(gobo.ElementType);
-
-            //Console.WriteLine();
-
-            //Console.WriteLine(waterspell.Name);
-            //Console.WriteLine(waterspell.Damage);
-            //Console.WriteLine(waterspell.ElementType);
+            
 
 
 
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("Starting server...");
+                List<Message> messages = new List<Message>();
+
+                string pathToMessages = "/messages";
+                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages);
+                server.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("There was a problem: " + ex.Message);
+            }
 
 
-
-
-
+            
 
         }
+
     }
 }

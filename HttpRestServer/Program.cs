@@ -14,7 +14,7 @@ namespace HttpRestServer
 
         static void Main(string[] args)
         {
-
+            /*
             try
             {
                 Console.ForegroundColor = ConsoleColor.White;
@@ -22,13 +22,14 @@ namespace HttpRestServer
                 List<Message> messages = new List<Message>();
 
                 string pathToMessages = "/messages";
-                HttpServer server = new HttpServer(IPAddress.Loopback, 6789, pathToMessages, ref messages);
+                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages);
                 server.Run();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("There was a problem: " + ex.Message);
             }
+            */
 
         }
 

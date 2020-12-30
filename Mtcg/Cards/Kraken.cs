@@ -1,20 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Mtcg.Cards;
 
-namespace Mtcg
+namespace Mtcg.Cards
 {
-    public class Kraken : AbstractMonster
+    public class Kraken : Monster
     {
-        public Kraken() : base("Kraken") { }
+        public Kraken(string name, float damage) : base(name, damage) { }
 
-        // Kraken is immune against spells
-        public bool Attack(Spell opponent)
-        {
-            Console.WriteLine("My opponent is a Spell.");
-            Console.WriteLine("I'm the winner!");
-            return true;
-        }
     }
 }
