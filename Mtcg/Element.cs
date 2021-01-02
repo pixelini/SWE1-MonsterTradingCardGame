@@ -2,8 +2,8 @@
 {
     public enum Element
     {
+        Normal,
         Fire,
-        Water,
-        Normal
+        Water
     }
 }

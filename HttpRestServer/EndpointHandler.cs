@@ -144,7 +144,11 @@ namespace HttpRestServer
         {
             Console.WriteLine("I handle Add Package");
 
-            Console.WriteLine("das sind die daten: ");
+            // security check: admin token here?
+            if (!IsAdmin(req.Headers))
+            {
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+            }
 
             //List<ICard> myPackage = JsonConvert.DeserializeObject<List<ICard>>(req.Payload);
 
@@ -311,62 +315,44 @@ namespace HttpRestServer
             return msgID;
         }
 
-
-        private Element ExtractElementType(string cardName)
+        private string ExtractElementType(string cardName)
         {
-            if (cardName.ToLower().Contains("fire"))
+            var arr = Enum.GetValues(typeof(Element));
+
+            for (var i = 0; i < arr.Length; i++)
             {
-                return Element.Fire;
-            }
-            else if (cardName.ToLower().Contains("water"))
-            {
-                return Element.Water;
+                var elementType = arr.GetValue(i)?.ToString();
+                if (elementType != null && cardName.ToLower().Contains(elementType.ToLower()))
+                {
+                    return elementType;
+                }
             }
 
-            return Element.Normal;
+            // if there is no specific element type given, the card will be defined as first element of enum-array (here: normal)
+            return arr.GetValue(0)?.ToString();
         }
 
         private string ExtractCardType(string cardName)
         {
-            if (cardName.ToLower().Contains("dragon"))
+            var arr = Enum.GetValues(typeof(CardType));
+
+            for (var i = 0; i < arr.Length; i++)
             {
-                return "Dragon";
+                var cardType = arr.GetValue(i)?.ToString();
+                if (cardType != null && cardName.ToLower().Contains(cardType.ToLower()))
+                {
+                    return cardType;
+                }
             }
-            else if (cardName.ToLower().Contains("elf"))
-            {
-                return "Elf";
-            }
-            else if (cardName.ToLower().Contains("goblin"))
-            {
-                return "Goblin";
-            }
-            else if (cardName.ToLower().Contains("knight"))
-            {
-                return "Knight";
-            }
-            else if (cardName.ToLower().Contains("kraken"))
-            {
-                return "Kraken";
-            }
-            else if (cardName.ToLower().Contains("monster"))
-            {
-                return "Monster";
-            }
-            else if (cardName.ToLower().Contains("ork"))
-            {
-                return "Ork";
-            }
-            else if (cardName.ToLower().Contains("wizzard"))
-            {
-                return "Wizzard";
-            }
-            else if (cardName.ToLower().Contains("spell"))
-            {
-                return "Spell";
-            }
-          
-            // if there is no specific monster type given, the card will be defined as spell
-            return "Spell";
+
+            // if there is no specific monster type given, the card will be defined as first element of enum-array (here: spell)
+            return arr.GetValue(0)?.ToString();
+
+        }
+
+        private bool IsAdmin(Dictionary<string, string> headers)
+        {
+            return headers.ContainsKey("Authorization") && headers.ContainsValue("Basic admin-mtcgToken");
         }
 
 
