@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Text;
 using Castle.Core.Internal;
+using HttpRestServer.DB_Connection;
 using Newtonsoft.Json;
 using Mtcg;
 
@@ -12,12 +13,14 @@ namespace HttpRestServer
     {
         private List<Message> _messages;
         private int _counter;
+        private Database _db;
 
 
         public EndpointHandler(ref List<Message> messages)
         {
             _messages = messages;
             _counter = 0;
+            _db = new Database();
         }
         
         public Response HandleRequest(RequestContext req)
@@ -33,7 +36,6 @@ namespace HttpRestServer
 
             switch (req.Action)
             {
-
                 case Action.Registration:
                     response = HandleRegistration(req);
                     break;
@@ -43,6 +45,32 @@ namespace HttpRestServer
                 case Action.AddPackage:
                     response = HandleAddPackage(req);
                     break;
+                case Action.BuyPackage:
+                    break;
+                //case Action.ShowCards:
+                //    break;
+                //case Action.ShowDeck:
+                //    break;
+                //case Action.ConfigureDeck:
+                //    break;
+                //case Action.ShowDeckInPlainText:
+                //    break;
+                //case Action.ShowProfile:
+                //    break;
+                //case Action.EditProfile:
+                //    break;
+                //case Action.ShowStats:
+                //    break;
+                //case Action.ShowScoreboard:
+                //    break;
+                //case Action.JoinBattle:
+                //    break;
+                //case Action.ShowDeals:
+                //    break;
+                //case Action.CreateDeal:
+                //    break;
+                //case Action.DeleteDeal:
+                //    break;
                 default:
                     Console.WriteLine("Request in not valid");
                     response = new Response(400, "Bad Request");
@@ -78,65 +106,37 @@ namespace HttpRestServer
 
         private Response HandleRegistration(RequestContext req)
         {
-            Console.WriteLine("I handle Registration");
+            User currUser = JsonConvert.DeserializeObject<User>(req.Payload);
 
-            Console.WriteLine("das sind die daten: ");
-
-            User myUser = JsonConvert.DeserializeObject<User>(req.Payload);
-
-            if (myUser.Username.IsNullOrEmpty() || myUser.Password.IsNullOrEmpty())
+            if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
                 return new Response(400, "Bad Request", "Registrierung nicht möglich, Username oder Passwort fehlt.");
             }
 
-            Console.WriteLine(myUser.Username);
-            Console.WriteLine(myUser.Password);
-
-            // ask in database, if user already exists
-            // <DATABASE ACTION: Schauen ob username in Datenbank bereits existiert.>
-            // select * from user where username = myUser.Username;
-            bool userAlreadyExists = false;
-
-            if (userAlreadyExists)
+            if (_db.RegisterUser(currUser.Username, currUser.Password))
             {
-                return new Response(400, "Bad Request", "Registrierung nicht möglich, Username existiert bereits.");
-            }
-            else
-            {
-                // <DATABASE ACTION: User in Datenbank anlegen. inkl. Token miterstellen: Basic <username>-mtcgToken z.B. Basic kienboeck-mtcgToken
                 return new Response(201, "Created", "Registrierung erfolgreich.");
             }
+
+            return new Response(400, "Bad Request", "Registrierung nicht möglich, Username existiert bereits.");
 
         }
 
         private Response HandleLogin(RequestContext req)
         {
-            Console.WriteLine("I handle Login");
+            User currUser = JsonConvert.DeserializeObject<User>(req.Payload);
 
-            Console.WriteLine("das sind die daten: ");
-
-            User myUser = JsonConvert.DeserializeObject<User>(req.Payload);
-
-            if (myUser.Username.IsNullOrEmpty() || myUser.Password.IsNullOrEmpty())
+            if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
                 return new Response(400, "Bad Request", "Login nicht möglich, Username oder Passwort fehlt.");
             }
 
-            Console.WriteLine(myUser.Username);
-            Console.WriteLine(myUser.Password);
-
-            // ask in database, if username and password combination is correct
-            // <DATABASE ACTION: Schauen ob username und password Kombination übereinstimmt>
-            bool validLoginData = false;
-
-            if (validLoginData)
+            if (_db.Login(currUser.Username, currUser.Password))
             {
                 return new Response(200, "OK", "Login erfolgreich.");
             }
-            else
-            {
-                return new Response(400, "Bad Request", "Registrierung nicht möglich, Username und Passwort stimmen nicht überein.");
-            }
+
+            return new Response(400, "Bad Request", "Registrierung nicht möglich. Überprüfgen Sie nochmals ihre Eingaben.");
 
         }
 

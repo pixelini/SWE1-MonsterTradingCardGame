@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using HttpRestServer.DB_Connection;
 
 namespace HttpRestServer
 {
@@ -14,6 +15,11 @@ namespace HttpRestServer
 
         static void Main(string[] args)
         {
+            Console.WriteLine("Hello World");
+            var myDB = new Database();
+            //Console.WriteLine(myDb);
+            //myDb.Testing();
+            //myDb.RegisterUser("lisi", "glatz");
             
             try
             {
@@ -30,6 +36,7 @@ namespace HttpRestServer
                 Console.WriteLine("There was a problem: " + ex.Message);
             }
             
+
 
         }
 
