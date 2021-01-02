@@ -11,6 +11,12 @@ namespace Mtcg
         public int Stats { get; set; }
         public List<ICard> Stack { get; set; }
         public List<ICard> CardsDuringGame { get; set; }
+
+        public User(string username, string password)
+        {
+            Username = username;
+            Password = password;
+        }
     }
 
 }

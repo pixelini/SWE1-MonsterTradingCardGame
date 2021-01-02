@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using Mtcg.Cards;
-using HttpRestServer;
 
 namespace Mtcg
 {
@@ -35,8 +34,6 @@ namespace Mtcg
 
 
 
-            User elisabeth = new User();
-            Console.WriteLine(elisabeth);
 
 
 
@@ -44,20 +41,20 @@ namespace Mtcg
 
 
 
-            try
-            {
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Starting server...");
-                List<Message> messages = new List<Message>();
+            //try
+            //{
+            //    Console.ForegroundColor = ConsoleColor.White;
+            //    Console.WriteLine("Starting server...");
+            //    List<Message> messages = new List<Message>();
 
-                string pathToMessages = "/messages";
-                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages);
-                server.Run();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("There was a problem: " + ex.Message);
-            }
+            //    string pathToMessages = "/messages";
+            //    HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages);
+            //    server.Run();
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine("There was a problem: " + ex.Message);
+            //}
 
 
             

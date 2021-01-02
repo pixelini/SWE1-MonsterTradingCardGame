@@ -14,7 +14,7 @@ namespace HttpRestServer
 
         static void Main(string[] args)
         {
-            /*
+            
             try
             {
                 Console.ForegroundColor = ConsoleColor.White;
@@ -29,7 +29,7 @@ namespace HttpRestServer
             {
                 Console.WriteLine("There was a problem: " + ex.Message);
             }
-            */
+            
 
         }
 
