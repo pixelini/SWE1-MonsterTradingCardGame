@@ -3,6 +3,8 @@ using System.Data.SqlTypes;
 using System.Runtime.InteropServices.ComTypes;
 using Mtcg;
 using Npgsql;
+using NpgsqlTypes;
+using NUnit.Framework;
 
 namespace HttpRestServer.DB_Connection
 {
@@ -32,7 +34,6 @@ namespace HttpRestServer.DB_Connection
         public NpgsqlConnection Connect()
         {
             var connString = $"Host={Host};Username={Username};Password={Password};Database={Name}";
-            Console.WriteLine(connString);
             var conn = new NpgsqlConnection(connString);
             conn.Open();
             return conn;
@@ -66,7 +67,7 @@ namespace HttpRestServer.DB_Connection
         public void Testing()
         {
             var conn = Connect();
-            var sql = "select * from swe1_mtcg.card";
+            var sql = "SELECT * FROM swe1_mtcg.card";
             using var cmd = new NpgsqlCommand(sql, conn);
 
             var reader = cmd.ExecuteReader();
@@ -86,9 +87,76 @@ namespace HttpRestServer.DB_Connection
             conn.Close();
         }
 
-        public void RegisterUser(string username, string password)
+        // Register user with username and password and creates token for authentification. Method also checks if user already exists.
+        public bool RegisterUser(string username, string password)
         {
+            bool success = false;
 
+            if (DoesUserAlreadyExist(username))
+            {
+                Console.WriteLine("Ein User mit diesem Usernamen existiert bereits.");
+                return false;
+            }
+
+            Console.WriteLine("Registriere User...");
+            bool isAdmin = (username == "admin");
+            var token = "Basic " + username + "-mtcgToken";
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.\"user\" (username, password, auth_token, is_admin) VALUES (@username, @password, @authToken, @isAdmin)";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Parameters.Add(new NpgsqlParameter("@password", password));
+            cmd.Parameters.Add(new NpgsqlParameter("@authToken", token));
+            cmd.Parameters.Add(new NpgsqlParameter("@isAdmin", isAdmin));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                Console.WriteLine("User wurde erfolgreich registriert.");
+                success = true;
+            }
+
+            conn.Close();
+            return success;
+        }
+
+        public bool Login(string username, string password)
+        {
+            if (!DoesUserAlreadyExist(username))
+            {
+                Console.WriteLine("Der Username existiert nicht.");
+                return false;
+            }
+
+            bool success = false;
+
+            var conn = Connect();
+            var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username AND password = @password";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Parameters.Add(new NpgsqlParameter("@password", password));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+
+            success = reader.HasRows;
+            conn.Close();
+            return success;
+        }
+
+        private bool DoesUserAlreadyExist(string username)
+        {
+            var conn = Connect();
+            var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            return reader.HasRows;
         }
 
     }

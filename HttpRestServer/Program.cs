@@ -16,10 +16,11 @@ namespace HttpRestServer
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World");
-            var myDb = new Database();
-            Console.WriteLine(myDb);
-            myDb.Testing();
-            /*
+            var myDB = new Database();
+            //Console.WriteLine(myDb);
+            //myDb.Testing();
+            //myDb.RegisterUser("lisi", "glatz");
+            
             try
             {
                 Console.ForegroundColor = ConsoleColor.White;
@@ -34,7 +35,7 @@ namespace HttpRestServer
             {
                 Console.WriteLine("There was a problem: " + ex.Message);
             }
-            */
+            
 
 
         }
