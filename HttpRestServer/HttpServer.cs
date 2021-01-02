@@ -106,17 +106,86 @@ namespace HttpRestServer
             {
                 return Action.Add;
             }
-            else if (req.Method == HttpVerb.Get && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Get && req.ResourcePath == "/message/")
             {
                 return Action.Read;
             }
-            else if (req.Method == HttpVerb.Put && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Put && req.ResourcePath == "/message/5")
             {
                 return Action.Update;
             }
-            else if (req.Method == HttpVerb.Delete && IsValidPathWithMsgID(req.ResourcePath))
+            else if (req.Method == HttpVerb.Delete && req.ResourcePath == "/message/")
             {
                 return Action.Delete;
+            } // HERE IS THE NEW IMPLEMENTATION
+            else if (req.Method == HttpVerb.Post) // POST
+            {
+                switch (req.ResourcePath)
+                {
+                    case "/users":
+                        return Action.Registration;
+                    case "/sessions":
+                        return Action.Login;
+                    case "/packages":
+                        return Action.AddPackage;
+                    case "/transactions/packages":
+                        return Action.BuyPackage;
+                    case "/tradings":
+                        return Action.CreateDeal;
+                    case "/battles":
+                        return Action.JoinBattle;
+                    default:
+                        return Action.Undefined;
+                }
+            }
+            else if (req.Method == HttpVerb.Get)
+            {
+                switch (req.ResourcePath)
+                {
+                    case "/cards":
+                        return Action.ShowCards;
+                    case "/deck":
+                        return Action.ShowDeck;
+                    case "/deck?format=plain":
+                        return Action.ShowDeckInPlainText;
+                    case "/stats":
+                        return Action.ShowStats;
+                    case "/score":
+                        return Action.ShowScoreboard;
+                    case "/tradings":
+                        return Action.ShowDeals;
+                    default:
+                        // is it: /users/<username> ? does the username exist? check!
+                        if (true)
+                        {
+                            return Action.ShowProfile;
+                        }
+                        return Action.Undefined;
+                }
+            }
+            else if (req.Method == HttpVerb.Put)
+            {
+                switch (req.ResourcePath)
+                {
+                    case "/deck":
+                        return Action.ConfigureDeck;
+                    default:
+                        // is it: /users/<username> ? does the username exist? check!
+                        if (true)
+                        {
+                            return Action.EditProfile;
+                        }
+                        return Action.Undefined;
+                }
+            }
+            else if (req.Method == HttpVerb.Delete)
+            {
+                // is it: /tradings/<card-id> ?
+                if (true)
+                {
+                    return Action.DeleteDeal;
+                }
+                return Action.Undefined;
             }
             else
             {
@@ -128,6 +197,10 @@ namespace HttpRestServer
 
         private bool IsValidPathWithMsgID(string path)
         {
+            // zwischenloesung
+            return true;
+
+
             // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
             StringBuilder regPattern = new StringBuilder();
             regPattern.Append(@"^\");

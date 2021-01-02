@@ -10,7 +10,7 @@ namespace HttpRestServer
 
         public static RequestContext ParseRequest(string data)
         {
-            if (data == null || data == "")
+            if (string.IsNullOrEmpty(data))
             {
                 return null;
             }
@@ -102,12 +102,12 @@ namespace HttpRestServer
 
         private static bool IsValidContentType(string contentType)
         {
-            if (contentType == "text/plain")
+            if (contentType == "text/plain" || contentType == "application/json")
             {
                 return true;
             }
 
-            Console.WriteLine("Can only handle text/plain Content-Type");
+            Console.WriteLine("Can only handle text/plain & application/json Content-Type");
             return false;
         }
 

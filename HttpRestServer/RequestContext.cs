@@ -89,6 +89,8 @@ namespace HttpRestServer
                 Console.WriteLine($"Key: {header.Key,-20} Value: {header.Value,-20} "); // right aligned with -
             }
 
+            Console.WriteLine("\nRequested Action: {0}", Action);
+
             Console.WriteLine();
 
         }

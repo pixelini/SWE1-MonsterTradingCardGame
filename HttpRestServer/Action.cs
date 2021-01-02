@@ -11,6 +11,22 @@ namespace HttpRestServer
         Read,
         Update,
         Delete,
-        Undefined
+        Undefined,
+        Registration,
+        Login,
+        AddPackage,
+        BuyPackage,
+        ShowCards,
+        ShowDeck,
+        ConfigureDeck,
+        ShowDeckInPlainText,
+        ShowProfile,
+        EditProfile,
+        ShowStats,
+        ShowScoreboard,
+        JoinBattle,
+        ShowDeals,
+        CreateDeal,
+        DeleteDeal
     }
 }
