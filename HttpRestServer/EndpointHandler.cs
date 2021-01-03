@@ -142,8 +142,6 @@ namespace HttpRestServer
 
         private Response HandleAddPackage(RequestContext req)
         {
-            Console.WriteLine("I handle Add Package");
-
             // security check: admin token here?
             if (!IsAdmin(req.Headers))
             {
@@ -174,6 +172,20 @@ namespace HttpRestServer
 
             }
 
+            
+            // save package in database
+            if (_db.AddPackage(cards))
+            {
+                return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.");
+            }
+
+            return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden.");
+
+            
+            /*
+            Console.WriteLine(cards);
+
+            
             // extract elementType and cardType and save package in database
             foreach (var card in cards)
             {
@@ -190,7 +202,8 @@ namespace HttpRestServer
             }
 
             return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.");
-
+            */
+            
         }
 
         private Response HandleList(RequestContext req)
@@ -315,40 +328,7 @@ namespace HttpRestServer
             return msgID;
         }
 
-        private string ExtractElementType(string cardName)
-        {
-            var arr = Enum.GetValues(typeof(Element));
 
-            for (var i = 0; i < arr.Length; i++)
-            {
-                var elementType = arr.GetValue(i)?.ToString();
-                if (elementType != null && cardName.ToLower().Contains(elementType.ToLower()))
-                {
-                    return elementType;
-                }
-            }
-
-            // if there is no specific element type given, the card will be defined as first element of enum-array (here: normal)
-            return arr.GetValue(0)?.ToString();
-        }
-
-        private string ExtractCardType(string cardName)
-        {
-            var arr = Enum.GetValues(typeof(CardType));
-
-            for (var i = 0; i < arr.Length; i++)
-            {
-                var cardType = arr.GetValue(i)?.ToString();
-                if (cardType != null && cardName.ToLower().Contains(cardType.ToLower()))
-                {
-                    return cardType;
-                }
-            }
-
-            // if there is no specific monster type given, the card will be defined as first element of enum-array (here: spell)
-            return arr.GetValue(0)?.ToString();
-
-        }
 
         private bool IsAdmin(Dictionary<string, string> headers)
         {
