@@ -135,22 +135,25 @@ namespace HttpRestServer.DB_Connection
             // create new package and in table package
             string packageName = CreateRandomName("Package");
             string packageID = CreatePackage(packageName);
-            Console.WriteLine("Package '{0}' (ID: {1}) wurde erstellt.\nFolgende Karten wurden hinzugefügt:", packageName, packageID);
+            Console.WriteLine("Package '{0}' (ID: {1}) wurde erstellt.\n", packageName, packageID);
 
-            // extract elementType and cardType and save package in database
             foreach (var card in cards)
             {
-                // adds card to table card
+                // extract elementType and cardType and save adds card to table card
                 success = AddCard(card.Id, card.Name, card.Damage);
-
                 if (!success)
                 {
+                    Console.WriteLine("Erstellung der Karten wurde abgebrochen. Es wurden dem Package keine Karten zugeordnet.", packageName, packageID);
                     return false;
                 }
+            }
 
+            Console.WriteLine("Folgende Karten wurden hinzugefügt:", packageName, packageID);
+
+            foreach (var card in cards)
+            {
                 // adds card to package in table package_has_cards
                 success = AddCardToPackage(packageID, card.Id, card.Name);
-
                 if (!success)
                 {
                     return false;

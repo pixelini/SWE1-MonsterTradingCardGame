@@ -148,11 +148,6 @@ namespace HttpRestServer
                 return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
             }
 
-            //List<ICard> myPackage = JsonConvert.DeserializeObject<List<ICard>>(req.Payload);
-
-            // List<string> myPackage = JsonConvert.DeserializeObject<List<string>>(req.Payload);
-            //List<string> cards = new List<string>();
-
             var inputSyntax = new[] { new { Id = "", Name = "", Damage = "" } };
             var cards = JsonConvert.DeserializeAnonymousType(req.Payload, inputSyntax);
 
@@ -172,7 +167,6 @@ namespace HttpRestServer
 
             }
 
-            
             // save package in database
             if (_db.AddPackage(cards))
             {
@@ -181,29 +175,13 @@ namespace HttpRestServer
 
             return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden.");
 
-            
-            /*
-            Console.WriteLine(cards);
+        }
 
-            
-            // extract elementType and cardType and save package in database
-            foreach (var card in cards)
-            {
-                string cardType = ExtractCardType(card.Name); // spell or monster
-                var elementType = ExtractElementType(card.Name); // fire, water or normal
-                Console.WriteLine(card.Name);
-                Console.WriteLine(card.Damage);
-                Console.WriteLine("Element of Card is: {0}", elementType);
-                Console.WriteLine("Type of Card is: {0}", cardType);
-                Console.WriteLine();
+        private Response BuyPackage(RequestContext req)
+        {
+            Console.WriteLine("I handle Buy Package...");
+            return new Response(200, "OK");
 
-                // <DATABASE ACTION: Karten in Tabelle Cards einfügen> (values: id, name, damage, elementtype, cardtype)
-                // <DATABASE ACTION: Karten als Package in Tabelle Package einfügen>
-            }
-
-            return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.");
-            */
-            
         }
 
         private Response HandleList(RequestContext req)
