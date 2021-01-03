@@ -50,8 +50,9 @@ namespace HttpRestServer
                 case Action.BuyPackage:
                     response = HandleBuyPackage(req);
                     break;
-                //case Action.ShowCards:
-                //    break;
+                case Action.ShowCards:
+                    response = HandleShowCards(req);
+                    break;
                 //case Action.ShowDeck:
                 //    break;
                 //case Action.ConfigureDeck:
@@ -203,6 +204,32 @@ namespace HttpRestServer
             {
                 return new Response(200, "OK", "Package wurde gekauft.");
             }
+
+            return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.");
+
+        }
+
+        private Response HandleShowCards(RequestContext req)
+        {
+            Console.WriteLine("Handle Show cards...");
+
+            // security check: user token here?
+            if (!IsLoggedIn(req.Headers))
+            {
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+            }
+
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+            // get cards to display
+            //List<ICard> mycards = G
+            List<ICard> mycards = _db.GetAllCards(username);
+            mycards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", "1", item.Name, item.Damage, item.ElementType));
+
+            var json = JsonConvert.SerializeObject(mycards, new Newtonsoft.Json.Converters.StringEnumConverter());
+
+            Console.WriteLine(json);
+
+
 
             return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.");
 

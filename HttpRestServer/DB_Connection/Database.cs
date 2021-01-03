@@ -4,6 +4,7 @@ using System.Data.SqlTypes;
 using System.Globalization;
 using System.Runtime.InteropServices.ComTypes;
 using Mtcg;
+using Mtcg.Cards;
 using Npgsql;
 using NpgsqlTypes;
 using NUnit.Framework;
@@ -477,6 +478,85 @@ namespace HttpRestServer.DB_Connection
 
             var reader = cmd.ExecuteReader();
             return reader.HasRows;
+
+        }
+
+        public List<ICard> GetAllCards(string username)
+        {
+            Console.WriteLine("Get all cards...");
+            List<ICard> myCards = new List<ICard>();
+
+
+            var conn = Connect();
+            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.\"user\" JOIN swe1_mtcg.user_owns_packages uop on \"user\".id = uop.user_id JOIN swe1_mtcg.package_has_cards phc on uop.package_id = phc.pkg_id JOIN swe1_mtcg.card c on phc.card_id = c.id WHERE username = @username";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardId = reader.GetString(0);
+                    string cardName = reader.GetString(1);
+                    float damage = reader.GetFloat(2);
+                    string elementType = reader.GetString(3);
+                    string monsterType = reader.GetString(4);
+                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
+                    myCards.Add(card);
+                }
+            }
+
+            conn.Close();
+
+            return myCards;
+
+        }
+
+        public ICard InitalizeCardsAsObjects(string id, string name, float damage, string elementType, string cardType)
+        {
+            if (cardType == CardType.Dragon.ToString())
+            {
+                var card = new Dragon(name, damage);
+                return card;
+            } 
+            else if (cardType == CardType.Elf.ToString())
+            {
+                var card = new Elf(name, damage);
+                return card;
+            } 
+            else if (cardType == CardType.Goblin.ToString())
+            {
+                var card = new Goblin(name, damage);
+                return card;
+            }
+            else if (cardType == CardType.Knight.ToString())
+            {
+                var card = new Knight(name, damage);
+                return card;
+            }
+            else if (cardType == CardType.Kraken.ToString())
+            {
+                var card = new Kraken(name, damage);
+                return card;
+            }
+            else if (cardType == CardType.Ork.ToString())
+            {
+                var card = new Ork(name, damage);
+                return card;
+            }
+            else if (cardType == CardType.Wizzard.ToString())
+            {
+                var card = new Wizzard(name, damage);
+                return card;
+            }
+            else if (cardType == CardType.Spell.ToString())
+            {
+                var card = new Spell(name, damage);
+                return card;
+            }
+
+            return null;
 
         }
 
