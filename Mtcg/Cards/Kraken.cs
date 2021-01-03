@@ -4,7 +4,7 @@ namespace Mtcg.Cards
 {
     public class Kraken : Monster
     {
-        public Kraken(string name, float damage) : base(name, damage) { }
+        public Kraken(string id, string name, float damage, Element elementType) : base(id, name, damage, elementType) { }
 
     }
 }

@@ -12,17 +12,6 @@ namespace Mtcg
         {
 
 
-            Goblin gobo = new Goblin("WaterGoblin", (float)50.0); //"e85e3976-7c86-4d06-9a80-641c2019a79f"
-            Spell spell = new Spell("RegularSpell", (float)50.0);
-
-            Console.WriteLine(gobo);
-            Console.WriteLine(gobo.Name);
-            Console.WriteLine(gobo.Damage);
-            Console.WriteLine(gobo.ElementType);
-            Console.WriteLine(spell);
-            Console.WriteLine(spell.Name);
-            Console.WriteLine(spell.Damage);
-            Console.WriteLine(spell.ElementType);
 
 
             Guid myhash = System.Guid.NewGuid();

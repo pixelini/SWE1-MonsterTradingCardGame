@@ -36,6 +36,13 @@ namespace HttpRestServer
                 return response;
             }
 
+
+            //Authorization (For all requests except Login and Registration)
+            if (!TryAuthorization(req))
+            {
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+            }
+
             switch (req.Action)
             {
                 case Action.Registration:
@@ -53,12 +60,15 @@ namespace HttpRestServer
                 case Action.ShowCards:
                     response = HandleShowCards(req);
                     break;
-                //case Action.ShowDeck:
-                //    break;
-                //case Action.ConfigureDeck:
-                //    break;
-                //case Action.ShowDeckInPlainText:
-                //    break;
+                case Action.ShowDeck:
+                    response = HandleShowDeck(req);
+                    break;
+                case Action.ConfigureDeck:
+                    response = HandleConfigureDeck(req);
+                    break;
+                case Action.ShowDeckInPlainText:
+                    response = HandleShowDeckInPlainText(req);
+                    break;
                 //case Action.ShowProfile:
                 //    break;
                 //case Action.EditProfile:
@@ -146,12 +156,6 @@ namespace HttpRestServer
 
         private Response HandleAddPackage(RequestContext req)
         {
-            // security check: admin token here?
-            if (!IsAdmin(req.Headers))
-            {
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
-            }
-
             var inputSyntax = new[] { new { Id = "", Name = "", Damage = "" } };
             var cards = JsonConvert.DeserializeAnonymousType(req.Payload, inputSyntax);
 
@@ -183,12 +187,6 @@ namespace HttpRestServer
 
         private Response HandleBuyPackage(RequestContext req)
         {
-            // security check: user token here?
-            if (!IsLoggedIn(req.Headers))
-            {
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
-            }
-
             var jsonData = JObject.Parse(req.Payload);
 
             if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
@@ -211,27 +209,117 @@ namespace HttpRestServer
 
         private Response HandleShowCards(RequestContext req)
         {
-            Console.WriteLine("Handle Show cards...");
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
-            // security check: user token here?
-            if (!IsLoggedIn(req.Headers))
+            // get cards to display
+            List<ICard> myCards = _db.GetAllCards(username);
+            Console.WriteLine("{0} Karten im Besitz", myCards.Count);
+
+            if (myCards.IsNullOrEmpty())
             {
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+                Console.WriteLine("Sie haben noch keine Karten gekauft.");
+                return new Response(200, "OK", "Keine Karten verfügbar.");
             }
 
+            myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
+            var json = JsonConvert.SerializeObject(myCards, new Newtonsoft.Json.Converters.StringEnumConverter());
+            return new Response(200, "OK", json);
+
+        }
+
+        private Response HandleShowDeck(RequestContext req)
+        {
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
             // get cards to display
-            //List<ICard> mycards = G
-            List<ICard> mycards = _db.GetAllCards(username);
-            mycards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", "1", item.Name, item.Damage, item.ElementType));
+            List<ICard> myCards = _db.GetDeck(username);
+            Console.WriteLine("{0} Karten im Deck", myCards.Count);
 
-            var json = JsonConvert.SerializeObject(mycards, new Newtonsoft.Json.Converters.StringEnumConverter());
+            if (myCards.IsNullOrEmpty())
+            {
+                Console.WriteLine("Sie haben noch keine Karten im Deck.");
+                return new Response(200, "OK", "Keine Karten verfügbar.");
+            }
 
-            Console.WriteLine(json);
+            myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
+            var json = JsonConvert.SerializeObject(myCards, new Newtonsoft.Json.Converters.StringEnumConverter());
+            return new Response(200, "OK", json);
+
+        }
+
+        private Response HandleConfigureDeck(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            var cardsForDeck = JArray.Parse(req.Payload);
+
+            if (cardsForDeck.Count != 4)
+            {
+                return new Response(400, "Bad Request", "Es müssen 4 Karten für das Deck angegeben werden.");
+            }
+
+            Console.WriteLine(cardsForDeck[0].GetType());
+
+            // get current deck (if available) as backup
+            List<ICard> backupDeck = _db.GetDeck(username);
+            bool backupDeckAvailable = !backupDeck.IsNullOrEmpty();
+
+            Console.WriteLine(backupDeckAvailable);
+
+            _db.DeleteDeck(username);
 
 
+            bool successful = true;
+            foreach (var cardId in cardsForDeck)
+            {
+                if (!_db.AddCardToDeck((string)cardId, username))
+                {
+                    successful = false;
+                    Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.");
+                    break;
+                }
+            }
 
-            return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.");
+            if (!successful)
+            {
+                _db.DeleteDeck(username);
+                if (backupDeckAvailable)
+                {
+                    Console.WriteLine("Altes Deck wird wieder hergestellt...");
+                    foreach (var card in backupDeck)
+                    {
+                        if (!_db.AddCardToDeck(card.Id, username))
+                        {
+                            successful = false;
+                            Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.");
+                            break;
+                        }
+                    }
+                }
+                return new Response(400, "Bad Request", "Neues Deck konnte nicht konfiguriert werden.");
+            }
+
+            return new Response(200, "OK");
+
+        }
+
+        private Response HandleShowDeckInPlainText(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            // get cards to display
+            List<ICard> myCards = _db.GetDeck(username);
+            Console.WriteLine("{0} Karten im Deck", myCards.Count);
+
+            if (myCards.IsNullOrEmpty())
+            {
+                Console.WriteLine("Sie haben noch keine Karten im Deck.");
+                return new Response(200, "OK", "Keine Karten verfügbar.");
+            }
+
+            StringBuilder myCardTable = new StringBuilder();
+            myCards.ForEach(item => myCardTable.Append($"Name: {item.Name, -20} Damage: {item.Damage, -10} Element: {item.ElementType, -10} ID: {item.Id} \n"));
+            return new Response(200, "OK", myCardTable.ToString());
 
         }
 
@@ -247,6 +335,7 @@ namespace HttpRestServer
             Console.WriteLine("\nHandle List...\n");
             foreach (var message in _messages)
             {
+
                 data.Append("ID ");
                 data.Append(message.ID);
                 data.Append(":\n");
@@ -404,6 +493,28 @@ namespace HttpRestServer
             string username = authorizationValue.Substring(firstpart.Length, lengthUsername);
 
             return username;
+        }
+
+        private bool TryAuthorization(RequestContext req)
+        {
+            // this must be ensured for every user
+            if (!(req.Action == Action.Registration || req.Action == Action.Login))
+            {
+                if (!IsLoggedIn(req.Headers))
+                {
+                    return false;
+                }
+            }
+
+            if (req.Action == Action.AddPackage)
+            {
+                if (!IsAdmin(req.Headers))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
 

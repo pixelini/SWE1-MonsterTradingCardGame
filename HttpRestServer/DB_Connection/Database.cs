@@ -85,13 +85,14 @@ namespace HttpRestServer.DB_Connection
             bool isAdmin = (username == "admin");
             var token = "Basic " + username + "-mtcgToken";
             var conn = Connect();
-            var sql = "INSERT INTO swe1_mtcg.\"user\" (username, password, auth_token, is_admin) VALUES (@username, @password, @authToken, @isAdmin)";
+            var sql = "INSERT INTO swe1_mtcg.\"user\" (username, password, auth_token, is_admin, coins) VALUES (@username, @password, @authToken, @isAdmin, @coins)";
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@username", username));
             cmd.Parameters.Add(new NpgsqlParameter("@password", password));
             cmd.Parameters.Add(new NpgsqlParameter("@authToken", token));
             cmd.Parameters.Add(new NpgsqlParameter("@isAdmin", isAdmin));
+            cmd.Parameters.Add(new NpgsqlParameter("@coins", 20));
             cmd.Prepare();
 
             if (cmd.ExecuteNonQuery() == 1)
@@ -483,9 +484,7 @@ namespace HttpRestServer.DB_Connection
 
         public List<ICard> GetAllCards(string username)
         {
-            Console.WriteLine("Get all cards...");
             List<ICard> myCards = new List<ICard>();
-
 
             var conn = Connect();
             var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.\"user\" JOIN swe1_mtcg.user_owns_packages uop on \"user\".id = uop.user_id JOIN swe1_mtcg.package_has_cards phc on uop.package_id = phc.pkg_id JOIN swe1_mtcg.card c on phc.card_id = c.id WHERE username = @username";
@@ -513,46 +512,134 @@ namespace HttpRestServer.DB_Connection
 
         }
 
+        public List<ICard> GetDeck(string username)
+        {
+            List<ICard> myCards = new List<ICard>();
+
+            var conn = Connect();
+            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.deck JOIN swe1_mtcg.card c on deck.card_id = c.id WHERE user_id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardId = reader.GetString(0);
+                    string cardName = reader.GetString(1);
+                    float damage = reader.GetFloat(2);
+                    string elementType = reader.GetString(3);
+                    string monsterType = reader.GetString(4);
+                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
+                    myCards.Add(card);
+                }
+            }
+
+            conn.Close();
+
+            return myCards;
+
+        }
+
+        public bool AddCardToDeck(string card1, string username)
+        {
+            bool success = false;
+            var conn = Connect();
+            try
+            {
+                var sql = "INSERT INTO swe1_mtcg.deck(user_id, card_id) VALUES (@user_id, @card_id)";
+
+                using var cmd = new NpgsqlCommand(sql, conn);
+                cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+                cmd.Parameters.Add(new NpgsqlParameter("@card_id", card1));
+                cmd.Prepare();
+
+                if (cmd.ExecuteNonQuery() == 1)
+                {
+                    Console.WriteLine("ID: {0}", card1);
+                    success = true;
+                }
+
+                conn.Close();
+
+                return success;
+            }
+            catch (Exception e)
+            {
+                //Console.WriteLine(e);
+                conn.Close();
+                success = false;
+                return success;
+            }
+            
+
+        }
+
+        public bool DeleteDeck(string username)
+        {
+            bool success = false;
+
+            var conn = Connect();
+            var sql = "DELETE FROM swe1_mtcg.deck WHERE user_id=@user_id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() <= 0)
+            {
+                success = true;
+            }
+
+            conn.Close();
+
+            return success;
+
+        }
+
+
+
         public ICard InitalizeCardsAsObjects(string id, string name, float damage, string elementType, string cardType)
         {
             if (cardType == CardType.Dragon.ToString())
             {
-                var card = new Dragon(name, damage);
+                var card = new Dragon(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             } 
             else if (cardType == CardType.Elf.ToString())
             {
-                var card = new Elf(name, damage);
+                var card = new Elf(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             } 
             else if (cardType == CardType.Goblin.ToString())
             {
-                var card = new Goblin(name, damage);
+                var card = new Goblin(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
             else if (cardType == CardType.Knight.ToString())
             {
-                var card = new Knight(name, damage);
+                var card = new Knight(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
             else if (cardType == CardType.Kraken.ToString())
             {
-                var card = new Kraken(name, damage);
+                var card = new Kraken(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
             else if (cardType == CardType.Ork.ToString())
             {
-                var card = new Ork(name, damage);
+                var card = new Ork(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
             else if (cardType == CardType.Wizzard.ToString())
             {
-                var card = new Wizzard(name, damage);
+                var card = new Wizzard(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
             else if (cardType == CardType.Spell.ToString())
             {
-                var card = new Spell(name, damage);
+                var card = new Spell(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
                 return card;
             }
 

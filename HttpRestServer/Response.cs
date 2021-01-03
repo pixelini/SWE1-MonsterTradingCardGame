@@ -40,6 +40,7 @@ namespace HttpRestServer
             Status = status;
             StatusMessage = statusMessage;
             Headers = new Dictionary<string, string>();
+            //Headers.Add("Content-Type", "application/json");
             Headers.Add("Content-Type", "text/plain");
             Headers.Add("Content-Length", body.Length.ToString());
             Body = body;
