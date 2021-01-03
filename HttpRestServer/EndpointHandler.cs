@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
 using Castle.Core.Internal;
 using HttpRestServer.DB_Connection;
 using Newtonsoft.Json;
 using Mtcg;
+using Newtonsoft.Json.Linq;
 
 namespace HttpRestServer
 {
@@ -46,6 +48,7 @@ namespace HttpRestServer
                     response = HandleAddPackage(req);
                     break;
                 case Action.BuyPackage:
+                    response = HandleBuyPackage(req);
                     break;
                 //case Action.ShowCards:
                 //    break;
@@ -177,10 +180,31 @@ namespace HttpRestServer
 
         }
 
-        private Response BuyPackage(RequestContext req)
+        private Response HandleBuyPackage(RequestContext req)
         {
-            Console.WriteLine("I handle Buy Package...");
-            return new Response(200, "OK");
+            // security check: user token here?
+            if (!IsLoggedIn(req.Headers))
+            {
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+            }
+
+            var jsonData = JObject.Parse(req.Payload);
+
+            if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
+            {
+                return new Response(400, "Bad Request", "ID wurde nicht korrekt übermittelt oder ist ungültig.");
+            }
+
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            // buy package for the user (with username and packageid)
+            Console.WriteLine("User möchte Package {0} kaufen.", jsonData["PackageID"]);
+            if (_db.BuyPackage((string)(jsonData["PackageID"]), username))
+            {
+                return new Response(200, "OK", "Package wurde gekauft.");
+            }
+
+            return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.");
 
         }
 
@@ -307,12 +331,53 @@ namespace HttpRestServer
         }
 
 
-
         private bool IsAdmin(Dictionary<string, string> headers)
         {
-            return headers.ContainsKey("Authorization") && headers.ContainsValue("Basic admin-mtcgToken");
+            if (!headers.ContainsKey("Authorization"))
+            {
+                return false;
+            }
+
+            string currUsername = GetUsernameFromAuthValue(headers["Authorization"]);
+
+            if (!_db.ValidateToken(headers["Authorization"], currUsername) || !_db.CheckIfUserIsAdmin(currUsername))
+            {
+                return false;
+            }
+
+            Console.WriteLine("Authorization erfolgreich. Du bist ein Admin. Hallo {0}!", currUsername);
+            return true;
         }
 
+        private bool IsLoggedIn(Dictionary<string, string> headers)
+        {
+            bool success = false;
+            if (!headers.ContainsKey("Authorization"))
+            {
+                return false;
+            }
+
+            string currUsername = GetUsernameFromAuthValue(headers["Authorization"]);
+
+            if (_db.ValidateToken(headers["Authorization"], currUsername))
+            {
+                success = true;
+                Console.WriteLine("Authorization erfolgreich. Hallo {0}!", currUsername);
+            }
+
+            return success;
+        }
+
+        private string GetUsernameFromAuthValue(string authorizationValue)
+        {
+            // structure is "Basic <username>-<Token>" here: z.B. "Basic kienboec-mtcgToken"
+            string firstpart = "Basic ";
+            int tokenLength = 10; //  "-" (1 char) + -Tokenlenght "mtcgToken" (9 char)
+            int lengthUsername = authorizationValue.Length - firstpart.Length - tokenLength;
+            string username = authorizationValue.Substring(firstpart.Length, lengthUsername);
+
+            return username;
+        }
 
 
     }
