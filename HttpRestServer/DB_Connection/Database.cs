@@ -85,7 +85,7 @@ namespace HttpRestServer.DB_Connection
             bool isAdmin = (username == "admin");
             var token = "Basic " + username + "-mtcgToken";
             var conn = Connect();
-            var sql = "INSERT INTO swe1_mtcg.\"user\" (username, password, auth_token, is_admin, coins) VALUES (@username, @password, @authToken, @isAdmin, @coins)";
+            var sql = "INSERT INTO swe1_mtcg.\"user\" (username, password, auth_token, is_admin, coins, elo) VALUES (@username, @password, @authToken, @isAdmin, @coins, @elo)";
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@username", username));
@@ -93,6 +93,7 @@ namespace HttpRestServer.DB_Connection
             cmd.Parameters.Add(new NpgsqlParameter("@authToken", token));
             cmd.Parameters.Add(new NpgsqlParameter("@isAdmin", isAdmin));
             cmd.Parameters.Add(new NpgsqlParameter("@coins", 20));
+            cmd.Parameters.Add(new NpgsqlParameter("@elo", 100));
             cmd.Prepare();
 
             if (cmd.ExecuteNonQuery() == 1)
@@ -598,6 +599,64 @@ namespace HttpRestServer.DB_Connection
 
         }
 
+        public Stats GetStats(string username)
+        {
+            Stats stats = null;
+
+            var conn = Connect();
+            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    stats = new Stats();
+                    stats.Username = reader.GetString(0);
+                    stats.Elo = reader.GetInt32(1);
+                    stats.Wins = reader.GetInt32(2);
+                    stats.Losses = reader.GetInt32(3);
+                }
+            }
+
+            conn.Close();
+
+            return stats;
+
+        }
+
+        public List<Stats> GetScoreboard()
+        {
+            List<Stats> scoreboard = new List<Stats>();
+
+            var conn = Connect();
+            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" order by elo DESC";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    var statsOfUser = new Stats()
+                    {
+                        Username = reader.GetString(0), 
+                        Elo = reader.GetInt32(1), 
+                        Wins = reader.GetInt32(2), 
+                        Losses = reader.GetInt32(3)
+                    };
+                    scoreboard.Add(statsOfUser);
+                }
+            }
+
+            conn.Close();
+
+            return scoreboard;
+
+        }
 
 
         public ICard InitalizeCardsAsObjects(string id, string name, float damage, string elementType, string cardType)

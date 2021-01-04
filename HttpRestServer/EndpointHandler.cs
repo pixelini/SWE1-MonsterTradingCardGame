@@ -69,14 +69,17 @@ namespace HttpRestServer
                 case Action.ShowDeckInPlainText:
                     response = HandleShowDeckInPlainText(req);
                     break;
-                //case Action.ShowProfile:
-                //    break;
+                case Action.ShowProfile:
+                    response = HandleShowProfile(req);
+                    break;
                 //case Action.EditProfile:
                 //    break;
-                //case Action.ShowStats:
-                //    break;
-                //case Action.ShowScoreboard:
-                //    break;
+                case Action.ShowStats:
+                    response = HandleShowStats(req);
+                    break;
+                case Action.ShowScoreboard:
+                    response = HandleShowScoreboard(req);
+                   break;
                 //case Action.JoinBattle:
                 //    break;
                 //case Action.ShowDeals:
@@ -241,7 +244,7 @@ namespace HttpRestServer
                 return new Response(200, "OK", "Keine Karten verfügbar.");
             }
 
-            myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
+            //myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
             var json = JsonConvert.SerializeObject(myCards, new Newtonsoft.Json.Converters.StringEnumConverter());
             return new Response(200, "OK", json);
 
@@ -321,6 +324,42 @@ namespace HttpRestServer
             myCards.ForEach(item => myCardTable.Append($"Name: {item.Name, -20} Damage: {item.Damage, -10} Element: {item.ElementType, -10} ID: {item.Id} \n"));
             return new Response(200, "OK", myCardTable.ToString());
 
+        }
+
+        private Response HandleShowStats(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            // get cards to display
+            Stats userStats = _db.GetStats(username);
+
+            Console.WriteLine();
+
+            if (userStats != null)
+            {
+                var json = JsonConvert.SerializeObject(userStats);
+                return new Response(200, "OK", json);
+            }
+
+            return new Response(400, "Bad Request", "Fehler.");
+            
+        }
+
+        private Response HandleShowScoreboard(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            // get stats to display
+            List<Stats> scoreboard = _db.GetScoreboard();
+            Console.WriteLine("{0} User spielen MTCG.", scoreboard.Count);
+
+            if (!scoreboard.IsNullOrEmpty())
+            {
+                var json = JsonConvert.SerializeObject(scoreboard, new Newtonsoft.Json.Converters.StringEnumConverter());
+                return new Response(200, "OK", json);
+            }
+
+            return new Response(400, "Bad Request", "Keine Spieler verfügbar.");
         }
 
         private Response HandleList(RequestContext req)
