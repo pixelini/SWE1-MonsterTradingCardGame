@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Runtime;
 using System.Text;
+using System.Threading.Channels;
 using Castle.Core.Internal;
 using HttpRestServer.DB_Connection;
 using Newtonsoft.Json;
@@ -72,8 +74,9 @@ namespace HttpRestServer
                 case Action.ShowProfile:
                     response = HandleShowProfile(req);
                     break;
-                //case Action.EditProfile:
-                //    break;
+                case Action.EditProfile:
+                    response = HandleEditProfile(req);
+                    break;
                 case Action.ShowStats:
                     response = HandleShowStats(req);
                     break;
@@ -326,11 +329,73 @@ namespace HttpRestServer
 
         }
 
+        private Response HandleShowProfile(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            Console.WriteLine(req.ResourcePath);
+
+            int i = req.ResourcePath.LastIndexOf('/');
+            string targetUsername = req.ResourcePath.Substring(i + 1);
+
+            Profile userProfile = _db.GetUserProfile(targetUsername);
+
+            if (userProfile != null)
+            {
+                var json = JsonConvert.SerializeObject(userProfile);
+                return new Response(200, "OK", json);
+            }
+
+            return new Response(400, "Bad Request", "Fehler.");
+
+        }
+
+        private Response HandleEditProfile(RequestContext req)
+        {
+            Console.WriteLine("handle edit");
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            Console.WriteLine(req.ResourcePath);
+
+            int i = req.ResourcePath.LastIndexOf('/');
+            string targetUsername = req.ResourcePath.Substring(i + 1);
+
+            if (username != targetUsername)
+            {
+                Console.WriteLine("Fremdes Profil darf nicht bearbeitet werden.");
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+            }
+
+            Console.WriteLine(req.Payload);
+
+            Profile newProfile = JsonConvert.DeserializeObject<Profile>(req.Payload);
+
+            if (newProfile.Name.IsNullOrEmpty() || newProfile.Bio.IsNullOrEmpty() || newProfile.Image.IsNullOrEmpty())
+            {
+                return new Response(400, "Bad Request", "Nicht alle Werte übermittelt.");
+            }
+
+            if (_db.EditUserProfile(targetUsername, newProfile.Name, newProfile.Bio, newProfile.Image))
+            {
+                Profile userProfile = _db.GetUserProfile(targetUsername);
+
+                if (userProfile != null)
+                {
+                    Console.WriteLine("Profil wurde aktualisiert.");
+                    var json = JsonConvert.SerializeObject(userProfile);
+                    return new Response(200, "OK", json);
+                }
+            }
+
+            return new Response(400, "Bad Request", "Bearbeiten nicht möglich.");
+
+        }
+
         private Response HandleShowStats(RequestContext req)
         {
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
-            // get cards to display
+            // get stats to display
             Stats userStats = _db.GetStats(username);
 
             Console.WriteLine();
@@ -349,7 +414,7 @@ namespace HttpRestServer
         {
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
-            // get stats to display
+            // get scoreboard to display
             List<Stats> scoreboard = _db.GetScoreboard();
             Console.WriteLine("{0} User spielen MTCG.", scoreboard.Count);
 

@@ -99,6 +99,8 @@ namespace HttpRestServer.DB_Connection
             if (cmd.ExecuteNonQuery() == 1)
             {
                 Console.WriteLine("User wurde erfolgreich registriert.");
+                // profil erstellen
+                CreateUserProfile(username);
                 success = true;
             }
 
@@ -450,6 +452,7 @@ namespace HttpRestServer.DB_Connection
             if (cmdInsert.ExecuteNonQuery() != 1)
             {
                 Console.WriteLine("Kauf nicht erfolgreich.");
+                conn.Close();
                 return false;
             }
 
@@ -462,6 +465,7 @@ namespace HttpRestServer.DB_Connection
             if (cmdUpdate.ExecuteNonQuery() != 1)
             {
                 Console.WriteLine("Fehler bei Coins-Update.");
+                conn.Close();
                 return false;
             }
 
@@ -655,6 +659,83 @@ namespace HttpRestServer.DB_Connection
             conn.Close();
 
             return scoreboard;
+
+        }
+
+        public Profile GetUserProfile(string username)
+        {
+            Profile profile = null;
+
+            if (!DoesUserAlreadyExist(username))
+            {
+                Console.WriteLine("User exisitiert nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT profile_name, image, bio FROM swe1_mtcg.profil WHERE user_id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    profile = new Profile();
+                    profile.Name = reader.GetString(0);
+                    profile.Image = reader.GetString(1);
+                    profile.Bio = reader.GetString(2);
+                }
+            }
+
+            conn.Close();
+
+            return profile;
+
+        }
+
+        public bool EditUserProfile(string username, string newName, string newBio, string newImage)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.profil SET profile_name=@name, bio=@bio, image=@image WHERE user_id = @user_id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@name", newName));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@bio", newBio));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@image", newImage));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        public bool CreateUserProfile(string username)
+        {
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.profil(user_id, profile_name, image, bio) VALUES (@user_id, @username, @image, @bio)";
+            using var cmdInsert = new NpgsqlCommand(sql, conn);
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@image", ":-)"));
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@bio", "Hey there! I am playing MTCG."));
+            cmdInsert.Prepare();
+
+            if (cmdInsert.ExecuteNonQuery() != 1)
+            {
+                Console.WriteLine("Profil erstellen nicht erfolgreich.");
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
 
         }
 
