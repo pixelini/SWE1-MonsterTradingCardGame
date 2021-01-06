@@ -6,12 +6,12 @@ using Mtcg.Cards;
 namespace UnitTest
 {
     public class MemberTests
-    {
+    {/*
         [SetUp]
         public void Setup()
         {
         }
-
+        
         [Test]
         public void TestMonsterHasValidName()
         {
@@ -93,7 +93,7 @@ namespace UnitTest
             Assert.That(element == Element.Fire || element == Element.Water || element == Element.Normal);
         }
 
-
+        */
     }
 
 

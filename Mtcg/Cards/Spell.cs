@@ -14,23 +14,7 @@ namespace Mtcg.Cards
             this.Id = id;
             this.Name = name;
             this.Damage = damage;
-
-            // check if damage is between 20 and 120
-            switch (1)
-            {
-                case 1:
-                    this.ElementType = Element.Fire;
-                    break;
-                case 2:
-                    this.ElementType = Element.Water;
-                    break;
-                case 3:
-                    this.ElementType = Element.Normal;
-                    break;
-                default:
-                    break;
-            }
-
+            this.ElementType = elementType;
         }
 
 

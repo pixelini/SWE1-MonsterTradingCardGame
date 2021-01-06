@@ -410,7 +410,7 @@ namespace HttpRestServer
 
             //Console.WriteLine(myUser.Deck);
 
-            /*
+            
             foreach (var card in myUser.Deck)
             {
                 Console.WriteLine(card.Id);
@@ -423,7 +423,8 @@ namespace HttpRestServer
                     Console.WriteLine("OMG");
                 }
             }
-            */
+            
+            
             //Console.WriteLine(myUser.Stats);
 
             //myUser.Deck.ForEach(card => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", card.Id, card.ElementType, card.Damage, card.GetType()));
@@ -437,7 +438,7 @@ namespace HttpRestServer
                     addingSuccessful = true;
                     Console.WriteLine("Adding successful: " + addingSuccessful);
 
-                    while (!currBattle.HasStarted)
+                    while (!currBattle.HasStarted())
                     {
                         Console.WriteLine("Waiting...");
                     }
@@ -446,7 +447,7 @@ namespace HttpRestServer
 
                     while (currBattle.IsRunning())
                     {
-                        Console.WriteLine("Game is running...");
+                        //Console.WriteLine("Game is running...");
                     }
 
                     Console.WriteLine("Game ended...");
@@ -462,14 +463,45 @@ namespace HttpRestServer
 
                 while (battleThatPlayerHosts.UserCount != 2)
                 {
-                    Console.WriteLine("Noch kein Zweiter Spieler hier!");
+                    //Console.WriteLine("Noch kein Zweiter Spieler hier!");
                 }
 
                 Console.WriteLine("Zweiter Spieler ist hier!");
                 battleThatPlayerHosts.StartGame();
-                battleThatPlayerHosts.EndGame();
+
+                while (battleThatPlayerHosts.IsRunning())
+                {
+                    Console.WriteLine("Game is running...");
+                }
+
+                Console.WriteLine("Game ended...");
+                //Console.WriteLine(battleThatPlayerHosts.Winner.Username);
+
+
+                // Show Log
+                //Console.WriteLine("show log");
+                battleThatPlayerHosts.Gamelog.Show();
 
                 // look at results
+                if (battleThatPlayerHosts.Winner == null)
+                {
+                    Console.WriteLine("Unentschieden");
+                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo));
+                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo));
+                } else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player1.Username)
+                {
+                    Console.WriteLine("I'm the winner");
+                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo + 3));
+                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo - 5));
+                }
+                else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player2.Username)
+                {
+                    Console.WriteLine("Gegner is the winner");
+                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo - 5));
+                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo + 3));
+                }
+
+
 
             }
 

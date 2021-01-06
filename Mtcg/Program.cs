@@ -14,19 +14,17 @@ namespace Mtcg
 
 
 
-            Guid myhash = System.Guid.NewGuid();
-            Guid myhash1 = System.Guid.NewGuid();
-            Guid myhash2 = System.Guid.NewGuid();
-            Console.WriteLine(myhash);
-            Console.WriteLine(myhash1);
-            Console.WriteLine(myhash2);
+            //Guid myhash = System.Guid.NewGuid();
+            //Guid myhash1 = System.Guid.NewGuid();
+            //Guid myhash2 = System.Guid.NewGuid();
+            //Console.WriteLine(myhash);
+            //Console.WriteLine(myhash1);
+            //Console.WriteLine(myhash2);
 
 
 
 
 
-
-            
 
 
 
@@ -46,7 +44,7 @@ namespace Mtcg
             //}
 
 
-            
+
 
         }
 
