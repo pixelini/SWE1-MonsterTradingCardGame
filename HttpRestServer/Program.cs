@@ -7,6 +7,7 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using HttpRestServer.DB_Connection;
+using Mtcg;
 
 namespace HttpRestServer
 {
@@ -26,9 +27,10 @@ namespace HttpRestServer
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.WriteLine("Starting server...");
                 List<Message> messages = new List<Message>();
+                List<Battle> allBattles = new List<Battle>();
 
                 string pathToMessages = "/messages";
-                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages);
+                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages, ref allBattles);
                 server.Run();
             }
             catch (Exception ex)

@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Mtcg;
 
 namespace HttpRestServer
 {
@@ -16,7 +18,7 @@ namespace HttpRestServer
         public string MessagePath { get; set; }
 
 
-        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages)
+        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages, ref List<Battle> allBattles)
         {
             try
             {
@@ -32,7 +34,7 @@ namespace HttpRestServer
             }
 
             MessagePath = messagePath;
-            _endpointHandler = new EndpointHandler(ref messages);
+            _endpointHandler = new EndpointHandler(ref messages, ref allBattles);
 
         }
 
@@ -55,8 +57,11 @@ namespace HttpRestServer
                 {
                     Console.WriteLine("\nWaiting for connection...");
                     IClient connection = _listener.AcceptTcpClient();
+                    Task taskA = new Task(() => ProcessRequest(connection));
+                    // Start the task.
+                    taskA.Start();
                     Console.WriteLine("Connected!\n");
-                    ProcessRequest(connection);
+                    
                 }
 
                 Running = false;

@@ -9,6 +9,7 @@ using Castle.Core.Internal;
 using HttpRestServer.DB_Connection;
 using Newtonsoft.Json;
 using Mtcg;
+using Mtcg.Cards;
 using Newtonsoft.Json.Linq;
 
 namespace HttpRestServer
@@ -16,13 +17,15 @@ namespace HttpRestServer
     public class EndpointHandler : IEndpointHandler
     {
         private List<Message> _messages;
+        private List<Battle> _allBattles; //TESTING
         private int _counter;
         private Database _db;
 
 
-        public EndpointHandler(ref List<Message> messages)
+        public EndpointHandler(ref List<Message> messages, ref List<Battle> allBattles)
         {
             _messages = messages;
+            _allBattles = allBattles;
             _counter = 0;
             _db = new Database();
         }
@@ -83,8 +86,9 @@ namespace HttpRestServer
                 case Action.ShowScoreboard:
                     response = HandleShowScoreboard(req);
                    break;
-                //case Action.JoinBattle:
-                //    break;
+                case Action.JoinBattle:
+                    response = HandleJoinBattle(req);
+                    break;
                 //case Action.ShowDeals:
                 //    break;
                 //case Action.CreateDeal:
@@ -390,7 +394,74 @@ namespace HttpRestServer
             return new Response(400, "Bad Request", "Bearbeiten nicht möglich.");
 
         }
+        
+        private Response HandleJoinBattle(RequestContext req)
+        {
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
+
+            Console.WriteLine("\nHandle Join Battle...\n");
+
+            // User für battle vorbereiten
+            User myUser = new User();
+            myUser.Username = username;
+            myUser.Deck = _db.GetDeck(username);
+            myUser.Stats = _db.GetStats(username);
+
+            Console.WriteLine(myUser.Deck);
+
+            foreach (var card in myUser.Deck)
+            {
+                Console.WriteLine(card.Id);
+                Console.WriteLine(card.ElementType);
+                Console.WriteLine(card.Damage);
+                Console.WriteLine(card.GetType());
+
+                if (card is Ork)
+                {
+                    Console.WriteLine("OMG");
+                }
+            }
+
+            Console.WriteLine(myUser.Stats);
+
+            //myUser.Deck.ForEach(card => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", card.Id, card.ElementType, card.Damage, card.GetType()));
+
+            //check if user can join existing game
+            bool addingSuccessful = false;
+            foreach (var currBattle in _allBattles)
+            {
+                if (currBattle.AddUserToBattle(myUser))
+                {
+                    addingSuccessful = true;
+                    break;
+                }
+            }
+
+            if (!addingSuccessful)
+            {
+                Battle battle = new Battle { Player1 = myUser };
+                _allBattles.Add(battle);
+            }
+
+
+
+            //_messages.Add(inputMessage);
+            //Console.WriteLine("New message added.\n");
+
+            Console.WriteLine(_allBattles.Count);
+
+            //_allBattles.ForEach(game => Console.Write("{0} gegen {1}", game.Player1.Username, game.Player2.Username));
+
+
+
+            _allBattles.ForEach(game => Console.Write(String.Format("Battle: {0}{1}", game.Player1.Username, game.Player2 == null ? "" : String.Format(" gegen {0}\n", game.Player2.Username))));
+
+
+
+            return new Response(400, "Bad Request", "Fehler.");
+
+        }
         private Response HandleShowStats(RequestContext req)
         {
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
