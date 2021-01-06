@@ -34,14 +34,13 @@ namespace HttpRestServer
             Body = null;
         }
 
-        public Response(int status, string statusMessage, string body)
+        public Response(int status, string statusMessage, string body, bool isJson)
         {
             HttpVersion = "HTTP/1.1";
             Status = status;
             StatusMessage = statusMessage;
             Headers = new Dictionary<string, string>();
-            //Headers.Add("Content-Type", "application/json");
-            Headers.Add("Content-Type", "text/plain");
+            Headers.Add("Content-Type", isJson ? "application/json" : "text/plain");
             Headers.Add("Content-Length", body.Length.ToString());
             Body = body;
         }

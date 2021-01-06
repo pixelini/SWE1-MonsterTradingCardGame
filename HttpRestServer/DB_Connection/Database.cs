@@ -651,6 +651,43 @@ namespace HttpRestServer.DB_Connection
 
         }
 
+        public bool UpdateStatsAfterWin(string username)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo+3, wins=wins+1 WHERE id = @id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        public bool UpdateStatsAfterLoss(string username)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo-5, losses=losses+1 WHERE id = @id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+
         public List<Stats> GetScoreboard()
         {
             List<Stats> scoreboard = new List<Stats>();

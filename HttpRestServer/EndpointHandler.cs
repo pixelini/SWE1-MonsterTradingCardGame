@@ -45,7 +45,7 @@ namespace HttpRestServer
             //Authorization (For all requests except Login and Registration)
             if (!TryAuthorization(req))
             {
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.", false);
             }
 
             switch (req.Action)
@@ -134,15 +134,15 @@ namespace HttpRestServer
 
             if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Registrierung nicht möglich, Username oder Passwort fehlt.");
+                return new Response(400, "Bad Request", "Registrierung nicht möglich, Username oder Passwort fehlt.", false);
             }
 
             if (_db.RegisterUser(currUser.Username, currUser.Password))
             {
-                return new Response(201, "Created", "Registrierung erfolgreich.");
+                return new Response(201, "Created", "Registrierung erfolgreich.", false);
             }
 
-            return new Response(400, "Bad Request", "Registrierung nicht möglich, Username existiert bereits.");
+            return new Response(400, "Bad Request", "Registrierung nicht möglich, Username existiert bereits.", false);
 
         }
 
@@ -152,15 +152,15 @@ namespace HttpRestServer
 
             if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Login nicht möglich, Username oder Passwort fehlt.");
+                return new Response(400, "Bad Request", "Login nicht möglich, Username oder Passwort fehlt.", false);
             }
 
             if (_db.Login(currUser.Username, currUser.Password))
             {
-                return new Response(200, "OK", "Login erfolgreich.");
+                return new Response(200, "OK", "Login erfolgreich.", false);
             }
 
-            return new Response(400, "Bad Request", "Registrierung nicht möglich. Überprüfgen Sie nochmals ihre Eingaben.");
+            return new Response(400, "Bad Request", "Registrierung nicht möglich. Überprüfgen Sie nochmals ihre Eingaben.", false);
 
         }
 
@@ -171,7 +171,7 @@ namespace HttpRestServer
 
             if (cards.Length != 5)
             {
-                return new Response(400, "Bad Request", "Kartenanzahl für neues Package nicht korrekt. Es müssen genau 5 Karten angegeben werden.");
+                return new Response(400, "Bad Request", "Kartenanzahl für neues Package nicht korrekt. Es müssen genau 5 Karten angegeben werden.", false);
             }
 
             // check if IDs are valid
@@ -180,7 +180,7 @@ namespace HttpRestServer
                 // validation of input
                 if (card.Id.Length != 36)
                 {
-                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden. Bitte überprüfen Sie die Länge der ID.");
+                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden. Bitte überprüfen Sie die Länge der ID.", false);
                 }
 
             }
@@ -188,10 +188,10 @@ namespace HttpRestServer
             // save package in database
             if (_db.AddPackage(cards))
             {
-                return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.");
+                return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.", false);
             }
 
-            return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden.");
+            return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden.", false);
 
         }
 
@@ -201,7 +201,7 @@ namespace HttpRestServer
 
             if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
             {
-                return new Response(400, "Bad Request", "ID wurde nicht korrekt übermittelt oder ist ungültig.");
+                return new Response(400, "Bad Request", "ID wurde nicht korrekt übermittelt oder ist ungültig.", false);
             }
 
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
@@ -210,10 +210,10 @@ namespace HttpRestServer
             Console.WriteLine("User möchte Package {0} kaufen.", jsonData["PackageID"]);
             if (_db.BuyPackage((string)(jsonData["PackageID"]), username))
             {
-                return new Response(200, "OK", "Package wurde gekauft.");
+                return new Response(200, "OK", "Package wurde gekauft.", false);
             }
 
-            return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.");
+            return new Response(400, "Bad Request", "Package konnte nicht gekauft werden.", false);
 
         }
 
@@ -228,12 +228,12 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten gekauft.");
-                return new Response(200, "OK", "Keine Karten verfügbar.");
+                return new Response(200, "OK", "Keine Karten verfügbar.", false);
             }
 
             myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
             var json = JsonConvert.SerializeObject(myCards, new Newtonsoft.Json.Converters.StringEnumConverter());
-            return new Response(200, "OK", json);
+            return new Response(200, "OK", json, true);
 
         }
 
@@ -248,12 +248,12 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten im Deck.");
-                return new Response(200, "OK", "Keine Karten verfügbar.");
+                return new Response(200, "OK", "Keine Karten verfügbar.", false);
             }
 
             //myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
             var json = JsonConvert.SerializeObject(myCards, new Newtonsoft.Json.Converters.StringEnumConverter());
-            return new Response(200, "OK", json);
+            return new Response(200, "OK", json, true);
 
         }
 
@@ -265,7 +265,7 @@ namespace HttpRestServer
 
             if (cardsForDeck.Count != 4)
             {
-                return new Response(400, "Bad Request", "Es müssen 4 Karten für das Deck angegeben werden.");
+                return new Response(400, "Bad Request", "Es müssen 4 Karten für das Deck angegeben werden.", false);
             }
 
             Console.WriteLine(cardsForDeck[0].GetType());
@@ -285,7 +285,7 @@ namespace HttpRestServer
                 if (!_db.AddCardToDeck((string)cardId, username))
                 {
                     successful = false;
-                    Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.");
+                    Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.", false);
                     break;
                 }
             }
@@ -306,7 +306,7 @@ namespace HttpRestServer
                         }
                     }
                 }
-                return new Response(400, "Bad Request", "Neues Deck konnte nicht konfiguriert werden.");
+                return new Response(400, "Bad Request", "Neues Deck konnte nicht konfiguriert werden.", false);
             }
 
             return new Response(200, "OK");
@@ -324,12 +324,12 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten im Deck.");
-                return new Response(200, "OK", "Keine Karten verfügbar.");
+                return new Response(200, "OK", "Keine Karten verfügbar.", false);
             }
 
             StringBuilder myCardTable = new StringBuilder();
             myCards.ForEach(item => myCardTable.Append($"Name: {item.Name, -20} Damage: {item.Damage, -10} Element: {item.ElementType, -10} ID: {item.Id} \n"));
-            return new Response(200, "OK", myCardTable.ToString());
+            return new Response(200, "OK", myCardTable.ToString(), false);
 
         }
 
@@ -347,10 +347,10 @@ namespace HttpRestServer
             if (userProfile != null)
             {
                 var json = JsonConvert.SerializeObject(userProfile);
-                return new Response(200, "OK", json);
+                return new Response(200, "OK", json, true);
             }
 
-            return new Response(400, "Bad Request", "Fehler.");
+            return new Response(400, "Bad Request", "Fehler.", false);
 
         }
 
@@ -367,7 +367,7 @@ namespace HttpRestServer
             if (username != targetUsername)
             {
                 Console.WriteLine("Fremdes Profil darf nicht bearbeitet werden.");
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.");
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.", false);
             }
 
             Console.WriteLine(req.Payload);
@@ -376,7 +376,7 @@ namespace HttpRestServer
 
             if (newProfile.Name.IsNullOrEmpty() || newProfile.Bio.IsNullOrEmpty() || newProfile.Image.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Nicht alle Werte übermittelt.");
+                return new Response(400, "Bad Request", "Nicht alle Werte übermittelt.", false);
             }
 
             if (_db.EditUserProfile(targetUsername, newProfile.Name, newProfile.Bio, newProfile.Image))
@@ -387,11 +387,11 @@ namespace HttpRestServer
                 {
                     Console.WriteLine("Profil wurde aktualisiert.");
                     var json = JsonConvert.SerializeObject(userProfile);
-                    return new Response(200, "OK", json);
+                    return new Response(200, "OK", json, true);
                 }
             }
 
-            return new Response(400, "Bad Request", "Bearbeiten nicht möglich.");
+            return new Response(400, "Bad Request", "Bearbeiten nicht möglich.", false);
 
         }
         
@@ -488,20 +488,27 @@ namespace HttpRestServer
                     Console.WriteLine("Unentschieden");
                     Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo));
                     Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo));
+                    
                 } else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player1.Username)
                 {
+                    _db.UpdateStatsAfterWin(battleThatPlayerHosts.Player1.Username);
+                    _db.UpdateStatsAfterLoss(battleThatPlayerHosts.Player2.Username);
                     Console.WriteLine("I'm the winner");
                     Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo + 3));
                     Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo - 5));
                 }
                 else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player2.Username)
                 {
+                    _db.UpdateStatsAfterWin(battleThatPlayerHosts.Player2.Username);
+                    _db.UpdateStatsAfterLoss(battleThatPlayerHosts.Player1.Username);
                     Console.WriteLine("Gegner is the winner");
                     Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo - 5));
                     Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo + 3));
                 }
 
-
+     
+                var json = JsonConvert.SerializeObject(battleThatPlayerHosts.Gamelog);
+                return new Response(200, "OK", json, true);
 
             }
 
@@ -518,12 +525,10 @@ namespace HttpRestServer
 
             _allBattles.ForEach(game => Console.Write(String.Format("Battle: {0}{1}", game.Player1.Username, game.Player2 == null ? "" : String.Format(" gegen {0}\n", game.Player2.Username))));
 
-
-            
-
+            return new Response(200, "OK", "Fehler.", false);
 
 
-            return new Response(400, "Bad Request", "Fehler.");
+            return new Response(400, "Bad Request", "Fehler.", false);
 
         }
         private Response HandleShowStats(RequestContext req)
@@ -538,10 +543,10 @@ namespace HttpRestServer
             if (userStats != null)
             {
                 var json = JsonConvert.SerializeObject(userStats);
-                return new Response(200, "OK", json);
+                return new Response(200, "OK", json, true);
             }
 
-            return new Response(400, "Bad Request", "Fehler.");
+            return new Response(400, "Bad Request", "Fehler.", false);
             
         }
 
@@ -556,17 +561,17 @@ namespace HttpRestServer
             if (!scoreboard.IsNullOrEmpty())
             {
                 var json = JsonConvert.SerializeObject(scoreboard, new Newtonsoft.Json.Converters.StringEnumConverter());
-                return new Response(200, "OK", json);
+                return new Response(200, "OK", json, true);
             }
 
-            return new Response(400, "Bad Request", "Keine Spieler verfügbar.");
+            return new Response(400, "Bad Request", "Keine Spieler verfügbar.", false);
         }
 
         private Response HandleList(RequestContext req)
         {
             if (_messages.Count == 0)
             {
-                return new Response(200, "OK", "No messages have been sent yet.");
+                return new Response(200, "OK", "No messages have been sent yet.", false);
             }
 
             StringBuilder data = new StringBuilder();
@@ -583,7 +588,7 @@ namespace HttpRestServer
                 //Console.WriteLine(message.ID + ": " + message.Content);
             }
 
-            return new Response(200, "OK", data.ToString());
+            return new Response(200, "OK", data.ToString(), false);
         }
 
         private Response HandleAdd(RequestContext req)
@@ -594,7 +599,7 @@ namespace HttpRestServer
             _messages.Add(inputMessage);
             Console.WriteLine("New message added.\n");
 
-            return new Response(201, "Created", "ID: " + _counter.ToString());
+            return new Response(201, "Created", "ID: " + _counter.ToString(), false);
         }
 
         private Response HandleRead(RequestContext req)
@@ -609,7 +614,7 @@ namespace HttpRestServer
                 if (message.ID == msgID)
                 {
                     msgFound = true;   
-                    return new Response(200, "OK", message.Content);
+                    return new Response(200, "OK", message.Content, false);
                 }
             }
 

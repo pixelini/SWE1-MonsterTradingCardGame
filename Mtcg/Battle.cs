@@ -110,7 +110,6 @@ namespace Mtcg
                         break;
                 }
 
-                Gamelog.AddEntry("\n");
 
                 // Deck is updated
 

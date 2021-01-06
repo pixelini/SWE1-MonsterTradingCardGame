@@ -10,12 +10,12 @@ namespace Mtcg
     public class Logger
     {
         public string Title { get; set; }
-        public List<StringBuilder> Log { get; set; }
+        public List<string> Log { get; set; }
 
         public Logger(string name)
         {
             Title = name;
-            Log = new List<StringBuilder>();
+            Log = new List<string>();
             AddEntry(name);
         }
 
@@ -23,7 +23,7 @@ namespace Mtcg
         {
             var entry = new StringBuilder();
             entry.Append(sentence);
-            Log.Add(entry);
+            Log.Add(entry.ToString());
         }
 
         public void Show()
