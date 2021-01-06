@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -16,21 +17,16 @@ namespace HttpRestServer
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World");
-            var myDB = new Database();
-            //Console.WriteLine(myDb);
-            //myDb.Testing();
-            //myDb.RegisterUser("lisi", "glatz");
-            
+
             try
             {
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.WriteLine("Starting server...");
-                List<Message> messages = new List<Message>();
-                List<Battle> allBattles = new List<Battle>();
+                var messages = new List<Message>();
+                var allBattles = new ConcurrentBag<Battle>();
 
-                string pathToMessages = "/messages";
-                HttpServer server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages, ref allBattles);
+                var pathToMessages = "/messages";
+                var server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages, ref allBattles);
                 server.Run();
             }
             catch (Exception ex)

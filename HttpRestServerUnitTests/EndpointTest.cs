@@ -1,8 +1,10 @@
 ﻿using NUnit.Framework;
 using HttpRestServer;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using Mtcg;
 using Action = HttpRestServer.Action;
 
 namespace UnitTests
@@ -10,9 +12,9 @@ namespace UnitTests
     [TestFixture]
     public class EndpointTest
     {
-        /*
-        private EndpointHandler MyEndpointHandler;
-        private int Counter = 3;
+        
+        
+        private EndpointHandler _myEndpointHandler;
 
         [SetUp]
         public void SetupHandlerAndMessages()
@@ -24,8 +26,9 @@ namespace UnitTests
             messages.Add(msg1);
             messages.Add(msg2);
             messages.Add(msg3);
+            ConcurrentBag<Battle> allBattles = new ConcurrentBag<Battle>();
 
-            MyEndpointHandler = new EndpointHandler(ref messages);
+        _myEndpointHandler = new EndpointHandler(ref messages, ref allBattles);
         }
 
 
@@ -46,7 +49,7 @@ namespace UnitTests
             };
             
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -72,7 +75,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -99,7 +102,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -127,7 +130,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -154,7 +157,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -180,7 +183,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -206,7 +209,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -232,7 +235,7 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
@@ -256,13 +259,13 @@ namespace UnitTests
             };
 
             // Act
-            Response response = MyEndpointHandler.HandleRequest(request);
+            Response response = _myEndpointHandler.HandleRequest(request);
 
             // Assert
             Assert.AreEqual(correctResponse.Status, response.Status);
             Assert.AreEqual(correctResponse.StatusMessage, response.StatusMessage);
         }
+        
 
-*/
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -18,7 +19,7 @@ namespace HttpRestServer
         public string MessagePath { get; set; }
 
 
-        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages, ref List<Battle> allBattles)
+        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages, ref ConcurrentBag<Battle> allBattles)
         {
             try
             {
@@ -46,7 +47,7 @@ namespace HttpRestServer
             MessagePath = messagePath;
         }
 
-        public void Run()
+        public async void Run()
         {
             try
             {
@@ -56,12 +57,21 @@ namespace HttpRestServer
                 while (Running)
                 {
                     Console.WriteLine("\nWaiting for connection...");
-                    IClient connection = _listener.AcceptTcpClient();
-                    Task taskA = new Task(() => ProcessRequest(connection));
-                    // Start the task.
-                    taskA.Start();
-                    Console.WriteLine("Connected!\n");
+                    List<Task> tasks = new List<Task>();
+                    if (tasks.Count > 10)
+                    {
+                        var array = tasks.ToArray();
+                        int taskIndex = Task.WaitAny((array));
+                        await array[taskIndex];
+                        tasks.Remove(array[taskIndex]);
+                    }
+
                     
+                    
+                    IClient connection = _listener.AcceptTcpClient();
+                    Task clientTask = Task.Run(() => ProcessRequest(connection));
+                    tasks.Add(clientTask);
+                    Console.WriteLine("Connected!\n");
                 }
 
                 Running = false;

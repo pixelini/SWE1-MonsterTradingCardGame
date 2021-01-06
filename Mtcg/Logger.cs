@@ -10,6 +10,7 @@ namespace Mtcg
     public class Logger
     {
         public string Title { get; set; }
+        public string Winner { get; set; }
         public List<string> Log { get; set; }
 
         public Logger(string name)

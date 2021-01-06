@@ -80,8 +80,8 @@ namespace Mtcg
                 Console.WriteLine("Spieler 1: {0}, {1}, {2}", chosenCardP1.Name, chosenCardP1.Damage, chosenCardP1.ElementType);
                 Console.WriteLine("Spieler 2: {0}, {1}, {2}", chosenCardP2.Name, chosenCardP2.Damage, chosenCardP2.ElementType);
 
-                Gamelog.AddEntry(String.Format("{0} (Spieler 1): {1}, {2}, {3}", Player1.Username, chosenCardP1.Name, chosenCardP1.Damage, chosenCardP1.ElementType));
-                Gamelog.AddEntry(String.Format("{0} (Spieler 2): {1}, {2}, {3}", Player2.Username, chosenCardP2.Name, chosenCardP2.Damage, chosenCardP2.ElementType));
+                Gamelog.AddEntry(String.Format("{0}: {1}, {2}, {3}", Player1.Username, chosenCardP1.Name, chosenCardP1.Damage, chosenCardP1.ElementType));
+                Gamelog.AddEntry(String.Format("{0}: {1}, {2}, {3}", Player2.Username, chosenCardP2.Name, chosenCardP2.Damage, chosenCardP2.ElementType));
 
                 //HasPlayer1WonRound?
                 // YES: player1 bekommt card p2 von player2! (zu deck von player1 hinzufügen: card p2), (aus deck von player2 entfernen: card p2)
@@ -119,12 +119,14 @@ namespace Mtcg
                     if (Player2.Deck.IsNullOrEmpty())
                     {
                         Gamelog.AddEntry("SPIELENDE. " + Player2.Username + " hat keine Karten mehr. "+ Player1.Username + " hat das Battle gewonnen.");
+                        Gamelog.Winner = Player1.Username;
                         Console.WriteLine("Spieler 1 hat das Spiel gewonnen.");
                         Winner = Player1;
                     }
                     else
                     {
                         Gamelog.AddEntry("SPIELENDE. " + Player1.Username + " hat keine Karten mehr. " + Player2.Username + " hat das Battle gewonnen.");
+                        Gamelog.Winner = Player2.Username;
                         Console.WriteLine("SPIELENDE. Spieler 1 hat keine Karten mehr. Spieler 2 hat das Spiel gewonnen.");
                         Winner = Player2;
                     }

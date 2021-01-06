@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -17,12 +18,12 @@ namespace HttpRestServer
     public class EndpointHandler : IEndpointHandler
     {
         private List<Message> _messages;
-        private List<Battle> _allBattles; //TESTING
+        private ConcurrentBag<Battle> _allBattles; //TESTING
         private int _counter;
         private Database _db;
 
 
-        public EndpointHandler(ref List<Message> messages, ref List<Battle> allBattles)
+        public EndpointHandler(ref List<Message> messages, ref ConcurrentBag<Battle> allBattles)
         {
             _messages = messages;
             _allBattles = allBattles;
@@ -45,7 +46,7 @@ namespace HttpRestServer
             //Authorization (For all requests except Login and Registration)
             if (!TryAuthorization(req))
             {
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.", false);
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszufuehren.", false);
             }
 
             switch (req.Action)
@@ -134,7 +135,7 @@ namespace HttpRestServer
 
             if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Registrierung nicht möglich, Username oder Passwort fehlt.", false);
+                return new Response(400, "Bad Request", "Registrierung nicht moeglich, Username oder Passwort fehlt.", false);
             }
 
             if (_db.RegisterUser(currUser.Username, currUser.Password))
@@ -142,7 +143,7 @@ namespace HttpRestServer
                 return new Response(201, "Created", "Registrierung erfolgreich.", false);
             }
 
-            return new Response(400, "Bad Request", "Registrierung nicht möglich, Username existiert bereits.", false);
+            return new Response(400, "Bad Request", "Registrierung nicht moeglich, Username existiert bereits.", false);
 
         }
 
@@ -152,7 +153,7 @@ namespace HttpRestServer
 
             if (currUser.Username.IsNullOrEmpty() || currUser.Password.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Login nicht möglich, Username oder Passwort fehlt.", false);
+                return new Response(400, "Bad Request", "Login nicht moeglich, Username oder Passwort fehlt.", false);
             }
 
             if (_db.Login(currUser.Username, currUser.Password))
@@ -160,7 +161,7 @@ namespace HttpRestServer
                 return new Response(200, "OK", "Login erfolgreich.", false);
             }
 
-            return new Response(400, "Bad Request", "Registrierung nicht möglich. Überprüfgen Sie nochmals ihre Eingaben.", false);
+            return new Response(400, "Bad Request", "Registrierung nicht moeglich. Ueberpruefen Sie nochmals ihre Eingaben.", false);
 
         }
 
@@ -171,7 +172,7 @@ namespace HttpRestServer
 
             if (cards.Length != 5)
             {
-                return new Response(400, "Bad Request", "Kartenanzahl für neues Package nicht korrekt. Es müssen genau 5 Karten angegeben werden.", false);
+                return new Response(400, "Bad Request", "Kartenanzahl fuer neues Package nicht korrekt. Es muessen genau 5 Karten angegeben werden.", false);
             }
 
             // check if IDs are valid
@@ -180,7 +181,7 @@ namespace HttpRestServer
                 // validation of input
                 if (card.Id.Length != 36)
                 {
-                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden. Bitte überprüfen Sie die Länge der ID.", false);
+                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden. Bitte ueberpruefen Sie die Laenge der ID.", false);
                 }
 
             }
@@ -188,10 +189,10 @@ namespace HttpRestServer
             // save package in database
             if (_db.AddPackage(cards))
             {
-                return new Response(201, "Created", "Package wurde erfolgreich hinzugefügt.", false);
+                return new Response(201, "Created", "Package wurde erfolgreich hinzugefuegt.", false);
             }
 
-            return new Response(400, "Bad Request", "Package konnte nicht hinzugefügt werden.", false);
+            return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden.", false);
 
         }
 
@@ -201,13 +202,13 @@ namespace HttpRestServer
 
             if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
             {
-                return new Response(400, "Bad Request", "ID wurde nicht korrekt übermittelt oder ist ungültig.", false);
+                return new Response(400, "Bad Request", "ID wurde nicht korrekt uebermittelt oder ist ungueltig.", false);
             }
 
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
             // buy package for the user (with username and packageid)
-            Console.WriteLine("User möchte Package {0} kaufen.", jsonData["PackageID"]);
+            Console.WriteLine("User moechte Package {0} kaufen.", jsonData["PackageID"]);
             if (_db.BuyPackage((string)(jsonData["PackageID"]), username))
             {
                 return new Response(200, "OK", "Package wurde gekauft.", false);
@@ -228,7 +229,7 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten gekauft.");
-                return new Response(200, "OK", "Keine Karten verfügbar.", false);
+                return new Response(200, "OK", "Keine Karten verfuegbar.", false);
             }
 
             myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
@@ -248,7 +249,7 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten im Deck.");
-                return new Response(200, "OK", "Keine Karten verfügbar.", false);
+                return new Response(200, "OK", "Keine Karten verfuegbar.", false);
             }
 
             //myCards.ForEach(item => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", item.Id, item.Name, item.Damage, item.ElementType));
@@ -265,7 +266,7 @@ namespace HttpRestServer
 
             if (cardsForDeck.Count != 4)
             {
-                return new Response(400, "Bad Request", "Es müssen 4 Karten für das Deck angegeben werden.", false);
+                return new Response(400, "Bad Request", "Es muessen 4 Karten fuer das Deck angegeben werden.", false);
             }
 
             Console.WriteLine(cardsForDeck[0].GetType());
@@ -285,7 +286,7 @@ namespace HttpRestServer
                 if (!_db.AddCardToDeck((string)cardId, username))
                 {
                     successful = false;
-                    Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.", false);
+                    Console.WriteLine("Fehler aufgetreten. Hinzufuegen abbrechen.", false);
                     break;
                 }
             }
@@ -301,7 +302,7 @@ namespace HttpRestServer
                         if (!_db.AddCardToDeck(card.Id, username))
                         {
                             successful = false;
-                            Console.WriteLine("Fehler aufgetreten. Hinzufügen abbrechen.");
+                            Console.WriteLine("Fehler aufgetreten. Hinzufuegen abbrechen.");
                             break;
                         }
                     }
@@ -324,7 +325,7 @@ namespace HttpRestServer
             if (myCards.IsNullOrEmpty())
             {
                 Console.WriteLine("Sie haben noch keine Karten im Deck.");
-                return new Response(200, "OK", "Keine Karten verfügbar.", false);
+                return new Response(200, "OK", "Keine Karten verfuegbar.", false);
             }
 
             StringBuilder myCardTable = new StringBuilder();
@@ -367,7 +368,7 @@ namespace HttpRestServer
             if (username != targetUsername)
             {
                 Console.WriteLine("Fremdes Profil darf nicht bearbeitet werden.");
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszuführen.", false);
+                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszufuehren.", false);
             }
 
             Console.WriteLine(req.Payload);
@@ -376,7 +377,7 @@ namespace HttpRestServer
 
             if (newProfile.Name.IsNullOrEmpty() || newProfile.Bio.IsNullOrEmpty() || newProfile.Image.IsNullOrEmpty())
             {
-                return new Response(400, "Bad Request", "Nicht alle Werte übermittelt.", false);
+                return new Response(400, "Bad Request", "Nicht alle Werte uebermittelt.", false);
             }
 
             if (_db.EditUserProfile(targetUsername, newProfile.Name, newProfile.Bio, newProfile.Image))
@@ -391,43 +392,36 @@ namespace HttpRestServer
                 }
             }
 
-            return new Response(400, "Bad Request", "Bearbeiten nicht möglich.", false);
+            return new Response(400, "Bad Request", "Bearbeiten nicht moeglich.", false);
 
         }
         
         private Response HandleJoinBattle(RequestContext req)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-            Console.WriteLine("\nHandle Join Battle...\n");
+            // show all existing battles
+            Console.WriteLine("Current Battles: " + _allBattles.Count);
+            foreach (var test in _allBattles)
+            {
+                Console.Write(String.Format("Battle: {0}{1}", test.Player1.Username,
+                    test.Player2 == null ? "" : String.Format(" gegen {0}\n", test.Player2.Username)));
+            }
 
-            // User für battle vorbereiten
+            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+
+            // Get user data for battle
             User myUser = new User();
             myUser.Username = username;
             myUser.Deck = _db.GetDeck(username);
             myUser.Stats = _db.GetStats(username);
 
-            //MAKE SURE THAT ALL NECESSARY OBJECTS ARE HERE! (DECK!)
-
-            //Console.WriteLine(myUser.Deck);
-
-            
-            foreach (var card in myUser.Deck)
+            // make sure that all necessary objects are here
+            if (myUser.Deck.IsNullOrEmpty() || myUser.Deck.Count < 4)
             {
-                Console.WriteLine(card.Id);
-                Console.WriteLine(card.ElementType);
-                Console.WriteLine(card.Damage);
-                Console.WriteLine(card.GetType());
-
-                if (card is Ork)
-                {
-                    Console.WriteLine("OMG");
-                }
+                return new Response(200, "OK", "Es wurde noch kein Deck konfiguriert.", false);
             }
-            
-            
-            //Console.WriteLine(myUser.Stats);
 
-            //myUser.Deck.ForEach(card => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", card.Id, card.ElementType, card.Damage, card.GetType()));
+
+            myUser.Deck.ForEach(card => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", card.Id, card.ElementType, card.Damage, card.GetType()));
 
             //check if user can join existing game
             bool addingSuccessful = false;
@@ -440,19 +434,19 @@ namespace HttpRestServer
 
                     while (!currBattle.HasStarted())
                     {
-                        Console.WriteLine("Waiting...");
+                        Console.WriteLine("Warten auf Spielstart...");
                     }
 
-                    Console.WriteLine("Game starting...");
+                    Console.WriteLine("Spiel wurde gestartet...");
 
                     while (currBattle.IsRunning())
                     {
                         //Console.WriteLine("Game is running...");
                     }
 
-                    Console.WriteLine("Game ended...");
-
-                    break;
+                    Console.WriteLine("Spiel beendet.");
+                    var json = JsonConvert.SerializeObject(currBattle.Gamelog);
+                    return new Response(200, "OK", json, true);
                 }
             }
 
@@ -471,62 +465,35 @@ namespace HttpRestServer
 
                 while (battleThatPlayerHosts.IsRunning())
                 {
-                    Console.WriteLine("Game is running...");
+                    Console.WriteLine("Spiel laeuft...");
                 }
 
-                Console.WriteLine("Game ended...");
-                //Console.WriteLine(battleThatPlayerHosts.Winner.Username);
+                Console.WriteLine("Spiel endet...");
 
 
-                // Show Log
-                //Console.WriteLine("show log");
-                battleThatPlayerHosts.Gamelog.Show();
+                // show Log
+                //battleThatPlayerHosts.Gamelog.Show();
 
                 // look at results
                 if (battleThatPlayerHosts.Winner == null)
                 {
-                    Console.WriteLine("Unentschieden");
-                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo));
-                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo));
+                    // Draw - nothing happens
                     
                 } else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player1.Username)
                 {
                     _db.UpdateStatsAfterWin(battleThatPlayerHosts.Player1.Username);
                     _db.UpdateStatsAfterLoss(battleThatPlayerHosts.Player2.Username);
-                    Console.WriteLine("I'm the winner");
-                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo + 3));
-                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo - 5));
                 }
                 else if (battleThatPlayerHosts.Winner.Username == battleThatPlayerHosts.Player2.Username)
                 {
                     _db.UpdateStatsAfterWin(battleThatPlayerHosts.Player2.Username);
                     _db.UpdateStatsAfterLoss(battleThatPlayerHosts.Player1.Username);
-                    Console.WriteLine("Gegner is the winner");
-                    Console.WriteLine("My Elo: " + (battleThatPlayerHosts.Player1.Stats.Elo - 5));
-                    Console.WriteLine("Elo of Gegner: " + (battleThatPlayerHosts.Player2.Stats.Elo + 3));
                 }
 
-     
                 var json = JsonConvert.SerializeObject(battleThatPlayerHosts.Gamelog);
                 return new Response(200, "OK", json, true);
 
             }
-
-
-
-            //_messages.Add(inputMessage);
-            //Console.WriteLine("New message added.\n");
-
-            Console.WriteLine("Current Battles: " + _allBattles.Count);
-
-            //_allBattles.ForEach(game => Console.Write("{0} gegen {1}", game.Player1.Username, game.Player2.Username));
-
-
-
-            _allBattles.ForEach(game => Console.Write(String.Format("Battle: {0}{1}", game.Player1.Username, game.Player2 == null ? "" : String.Format(" gegen {0}\n", game.Player2.Username))));
-
-            return new Response(200, "OK", "Fehler.", false);
-
 
             return new Response(400, "Bad Request", "Fehler.", false);
 
@@ -564,7 +531,7 @@ namespace HttpRestServer
                 return new Response(200, "OK", json, true);
             }
 
-            return new Response(400, "Bad Request", "Keine Spieler verfügbar.", false);
+            return new Response(400, "Bad Request", "Keine Spieler verfuegbar.", false);
         }
 
         private Response HandleList(RequestContext req)
@@ -742,7 +709,7 @@ namespace HttpRestServer
         private bool TryAuthorization(RequestContext req)
         {
             // this must be ensured for every user
-            if (!(req.Action == Action.Registration || req.Action == Action.Login))
+            if (!(req.Action == Action.Registration || req.Action == Action.Login || req.Action == Action.Undefined))
             {
                 if (!IsLoggedIn(req.Headers))
                 {
