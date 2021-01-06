@@ -357,6 +357,13 @@ namespace HttpRestServer.DB_Connection
         {
             int userID = GetUserID(username);
 
+            // check if package exists
+            if (DoesPackageExist(packageID))
+            {
+                Console.WriteLine("Package existiert nicht.");
+                return false;
+            }
+
             // check if packages is already in possession of user
             if (OwnsPackageAlready(packageID, userID))
             {
@@ -393,6 +400,19 @@ namespace HttpRestServer.DB_Connection
 
             var reader = cmd.ExecuteReader();
             return reader.HasRows;
+        }
+
+        private bool DoesPackageExist(string packageId)
+        {
+            var conn = Connect();
+            var sql = "SELECT * FROM swe1_mtcg.package WHERE id = @id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", packageId));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            return !reader.HasRows;
         }
 
         private int GetUserID(string username)

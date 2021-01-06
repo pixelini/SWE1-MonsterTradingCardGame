@@ -398,8 +398,6 @@ namespace HttpRestServer
         private Response HandleJoinBattle(RequestContext req)
         {
             string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
-
             Console.WriteLine("\nHandle Join Battle...\n");
 
             // User für battle vorbereiten
@@ -408,8 +406,11 @@ namespace HttpRestServer
             myUser.Deck = _db.GetDeck(username);
             myUser.Stats = _db.GetStats(username);
 
-            Console.WriteLine(myUser.Deck);
+            //MAKE SURE THAT ALL NECESSARY OBJECTS ARE HERE! (DECK!)
 
+            //Console.WriteLine(myUser.Deck);
+
+            /*
             foreach (var card in myUser.Deck)
             {
                 Console.WriteLine(card.Id);
@@ -422,8 +423,8 @@ namespace HttpRestServer
                     Console.WriteLine("OMG");
                 }
             }
-
-            Console.WriteLine(myUser.Stats);
+            */
+            //Console.WriteLine(myUser.Stats);
 
             //myUser.Deck.ForEach(card => Console.Write("ID: {0}, Name: {1} Damage: {2} Element: {3}\n", card.Id, card.ElementType, card.Damage, card.GetType()));
 
@@ -434,14 +435,42 @@ namespace HttpRestServer
                 if (currBattle.AddUserToBattle(myUser))
                 {
                     addingSuccessful = true;
+                    Console.WriteLine("Adding successful: " + addingSuccessful);
+
+                    while (!currBattle.HasStarted)
+                    {
+                        Console.WriteLine("Waiting...");
+                    }
+
+                    Console.WriteLine("Game starting...");
+
+                    while (currBattle.IsRunning())
+                    {
+                        Console.WriteLine("Game is running...");
+                    }
+
+                    Console.WriteLine("Game ended...");
+
                     break;
                 }
             }
 
             if (!addingSuccessful)
             {
-                Battle battle = new Battle { Player1 = myUser };
-                _allBattles.Add(battle);
+                Battle battleThatPlayerHosts = new Battle { Player1 = myUser };
+                _allBattles.Add(battleThatPlayerHosts);
+
+                while (battleThatPlayerHosts.UserCount != 2)
+                {
+                    Console.WriteLine("Noch kein Zweiter Spieler hier!");
+                }
+
+                Console.WriteLine("Zweiter Spieler ist hier!");
+                battleThatPlayerHosts.StartGame();
+                battleThatPlayerHosts.EndGame();
+
+                // look at results
+
             }
 
 
@@ -449,13 +478,16 @@ namespace HttpRestServer
             //_messages.Add(inputMessage);
             //Console.WriteLine("New message added.\n");
 
-            Console.WriteLine(_allBattles.Count);
+            Console.WriteLine("Current Battles: " + _allBattles.Count);
 
             //_allBattles.ForEach(game => Console.Write("{0} gegen {1}", game.Player1.Username, game.Player2.Username));
 
 
 
             _allBattles.ForEach(game => Console.Write(String.Format("Battle: {0}{1}", game.Player1.Username, game.Player2 == null ? "" : String.Format(" gegen {0}\n", game.Player2.Username))));
+
+
+            
 
 
 
