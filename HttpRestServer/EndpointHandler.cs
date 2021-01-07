@@ -49,6 +49,12 @@ namespace HttpRestServer
                 return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszufuehren.", false);
             }
 
+            string username = "";
+            if (req.Headers.ContainsKey("Authorization"))
+            {
+                username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
+            }
+            
             switch (req.Action)
             {
                 case Action.Registration:
@@ -67,62 +73,42 @@ namespace HttpRestServer
                     response = HandleShowCards(req);
                     break;
                 case Action.ShowDeck:
-                    response = HandleShowDeck(req);
+                    response = HandleShowDeck(req, username);
                     break;
                 case Action.ConfigureDeck:
-                    response = HandleConfigureDeck(req);
+                    response = HandleConfigureDeck(req, username);
                     break;
                 case Action.ShowDeckInPlainText:
-                    response = HandleShowDeckInPlainText(req);
+                    response = HandleShowDeckInPlainText(req, username);
                     break;
                 case Action.ShowProfile:
-                    response = HandleShowProfile(req);
+                    response = HandleShowProfile(req, username);
                     break;
                 case Action.EditProfile:
-                    response = HandleEditProfile(req);
+                    response = HandleEditProfile(req, username);
                     break;
                 case Action.ShowStats:
-                    response = HandleShowStats(req);
+                    response = HandleShowStats(req, username);
                     break;
                 case Action.ShowScoreboard:
-                    response = HandleShowScoreboard(req);
+                    response = HandleShowScoreboard(req, username);
                    break;
                 case Action.JoinBattle:
-                    response = HandleJoinBattle(req);
+                    response = HandleJoinBattle(req, username);
                     break;
-                //case Action.ShowDeals:
-                //    break;
-                //case Action.CreateDeal:
-                //    break;
-                //case Action.DeleteDeal:
-                //    break;
+                case Action.ShowDeals:
+                    response = HandleShowDeals(req, username);
+                    break;
+                case Action.CreateDeal:
+                    response = HandleCreateDeal(req, username);
+                    break;
+                case Action.DeleteDeal:
+                    response = HandleDeleteDeal(req, username);
+                    break;
                 default:
                     Console.WriteLine("Request in not valid");
                     response = new Response(400, "Bad Request");
                     return response;
-
-
-                    /*
-                    case Action.List:
-                        response = HandleList(req);
-                        break;
-                    case Action.Add:
-                        response = HandleAdd(req);
-                        break;
-                    case Action.Read:
-                        response = HandleRead(req);
-                        break;
-                    case Action.Update:
-                        response = HandleUpdate(req);
-                        break;
-                    case Action.Delete:
-                        response = HandleDelete(req);
-                        break;
-                    default:
-                        Console.WriteLine("Request in not valid");
-                        response = new Response(400, "Bad Request");
-                        return response;
-                    */
             }
           
             return response;
@@ -238,10 +224,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleShowDeck(RequestContext req)
+        private Response HandleShowDeck(RequestContext req, string username)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             // get cards to display
             List<ICard> myCards = _db.GetDeck(username);
             Console.WriteLine("{0} Karten im Deck", myCards.Count);
@@ -258,10 +242,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleConfigureDeck(RequestContext req)
+        private Response HandleConfigureDeck(RequestContext req, string username)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             var cardsForDeck = JArray.Parse(req.Payload);
 
             if (cardsForDeck.Count != 4)
@@ -314,10 +296,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleShowDeckInPlainText(RequestContext req)
+        private Response HandleShowDeckInPlainText(RequestContext req, string username)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             // get cards to display
             List<ICard> myCards = _db.GetDeck(username);
             Console.WriteLine("{0} Karten im Deck", myCards.Count);
@@ -334,10 +314,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleShowProfile(RequestContext req)
+        private Response HandleShowProfile(RequestContext req, string username)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             Console.WriteLine(req.ResourcePath);
 
             int i = req.ResourcePath.LastIndexOf('/');
@@ -355,11 +333,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleEditProfile(RequestContext req)
+        private Response HandleEditProfile(RequestContext req, string username)
         {
-            Console.WriteLine("handle edit");
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             Console.WriteLine(req.ResourcePath);
 
             int i = req.ResourcePath.LastIndexOf('/');
@@ -396,7 +371,7 @@ namespace HttpRestServer
 
         }
         
-        private Response HandleJoinBattle(RequestContext req)
+        private Response HandleJoinBattle(RequestContext req, string username)
         {
             // show all existing battles
             Console.WriteLine("Current Battles: " + _allBattles.Count);
@@ -405,8 +380,6 @@ namespace HttpRestServer
                 Console.Write(String.Format("Battle: {0}{1}", test.Player1.Username,
                     test.Player2 == null ? "" : String.Format(" gegen {0}\n", test.Player2.Username)));
             }
-
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
             // Get user data for battle
             User myUser = new User();
@@ -498,10 +471,72 @@ namespace HttpRestServer
             return new Response(400, "Bad Request", "Fehler.", false);
 
         }
-        private Response HandleShowStats(RequestContext req)
-        {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
 
+        private Response HandleDoTrading(RequestContext req, string username)
+        {
+            // get trade id via substring, must be possible because length is already validated
+            string tradeId = req.ResourcePath.Substring(10, 36);
+
+            return new Response(400, "Bad Request", "Fehler.", false);
+
+        }
+
+        private Response HandleCreateDeal(RequestContext req, string username)
+        {
+            Trade newTrade = JsonConvert.DeserializeObject<Trade>(req.Payload);
+
+            Console.WriteLine(req.Payload);
+            Console.WriteLine(newTrade.MinimumDamage.GetType());
+
+            if (newTrade.Id.IsNullOrEmpty() || newTrade.CardToTrade.IsNullOrEmpty() || newTrade.Type.IsNullOrEmpty() || (newTrade.MinimumDamage < 0))
+            {
+                return new Response(400, "Bad Request", "Nicht alle Werte uebermittelt.", false);
+            }
+
+            if (_db.AddTrade(username, newTrade.Id, newTrade.CardToTrade, newTrade.Type, newTrade.MinimumDamage))
+            {
+    
+                return new Response(200, "OK", "Trade wurde erstellt.", false);
+                
+            }
+
+            return new Response(400, "Bad Request", "Fehler.", false);
+
+        }
+
+        private Response HandleDeleteDeal(RequestContext req, string username)
+        {
+            // get trade id via substring, must be possible because length is already validated
+            string tradeId = req.ResourcePath.Substring(10, 36);
+
+            if (_db.DeleteDeal(username, tradeId))
+            {
+                return new Response(200, "OK", "Deal wurde entfernt.", false);
+            }
+
+            return new Response(400, "Bad Request", "Fehler.", false);
+
+        }
+
+        private Response HandleShowDeals(RequestContext req, string username)
+        {
+            // get deals to display
+            List<Trade> allTrades = _db.GetAllTrades();
+            Console.WriteLine("{0} Trades verfuegbar.", allTrades.Count);
+
+            if (!allTrades.IsNullOrEmpty())
+            {
+                var json = JsonConvert.SerializeObject(allTrades, new Newtonsoft.Json.Converters.StringEnumConverter());
+                return new Response(200, "OK", json, true);
+            }
+
+            return new Response(400, "Bad Request", "Keine Trades verfuegbar.", false);
+
+        }
+
+
+        private Response HandleShowStats(RequestContext req, string username)
+        {
             // get stats to display
             Stats userStats = _db.GetStats(username);
 
@@ -517,10 +552,8 @@ namespace HttpRestServer
             
         }
 
-        private Response HandleShowScoreboard(RequestContext req)
+        private Response HandleShowScoreboard(RequestContext req, string username)
         {
-            string username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
-
             // get scoreboard to display
             List<Stats> scoreboard = _db.GetScoreboard();
             Console.WriteLine("{0} User spielen MTCG.", scoreboard.Count);

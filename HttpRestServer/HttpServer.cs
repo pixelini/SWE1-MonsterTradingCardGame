@@ -108,32 +108,7 @@ namespace HttpRestServer
 
         public Action GetRequestedAction(RequestContext req)
         {
-            if (req == null)
-            {
-                return Action.Undefined;
-            }
-            // check if first line contains required information for all http methods
-            if (req.Method == HttpVerb.Get && req.ResourcePath == MessagePath)
-            {
-                return Action.List;
-            }
-            else if (req.Method == HttpVerb.Post && req.ResourcePath == MessagePath)
-            {
-                return Action.Add;
-            }
-            else if (req.Method == HttpVerb.Get && req.ResourcePath == "/message/")
-            {
-                return Action.Read;
-            }
-            else if (req.Method == HttpVerb.Put && req.ResourcePath == "/message/5")
-            {
-                return Action.Update;
-            }
-            else if (req.Method == HttpVerb.Delete && req.ResourcePath == "/message/")
-            {
-                return Action.Delete;
-            } // HERE IS THE NEW IMPLEMENTATION
-            else if (req.Method == HttpVerb.Post) // POST
+            if (req.Method == HttpVerb.Post) // POST
             {
                 switch (req.ResourcePath)
                 {
@@ -170,12 +145,7 @@ namespace HttpRestServer
                     case "/tradings":
                         return Action.ShowDeals;
                     default:
-                        // is it: /users/<username> ? does the username exist? check!
-                        if (true)
-                        {
-                            return Action.ShowProfile;
-                        }
-                        return Action.Undefined;
+                        return req.ResourcePath.Substring(0, 6) == "/users" ? Action.ShowProfile : Action.Undefined;
                 }
             }
             else if (req.Method == HttpVerb.Put)
@@ -185,18 +155,12 @@ namespace HttpRestServer
                     case "/deck":
                         return Action.ConfigureDeck;
                     default:
-                        // is it: /users/<username> ? does the username exist? check!
-                        if (true)
-                        {
-                            return Action.EditProfile;
-                        }
-                        return Action.Undefined;
+                        return req.ResourcePath.Substring(0, 6) == "/users" ? Action.EditProfile : Action.Undefined;
                 }
             }
             else if (req.Method == HttpVerb.Delete)
             {
-                // is it: /tradings/<card-id> ?
-                if (true)
+                if (req.ResourcePath.Substring(0, 9) == "/tradings" && req.ResourcePath.Length == 46)
                 {
                     return Action.DeleteDeal;
                 }
@@ -207,34 +171,6 @@ namespace HttpRestServer
                 Console.WriteLine("Not a valid request!");
                 return Action.Undefined;
             }
-
-        }
-
-        private bool IsValidPathWithMsgID(string path)
-        {
-            // zwischenloesung
-            return true;
-
-
-            // creating a regex pattern that looks like this, eg. path /messages --> "^\/messages\/\d+"
-            StringBuilder regPattern = new StringBuilder();
-            regPattern.Append(@"^\");
-            regPattern.Append(MessagePath);
-            regPattern.Append(@"\/\d+");
-
-            string pattern = regPattern.ToString();
-            Match m = Regex.Match(path, pattern, RegexOptions.IgnoreCase);
-            if (m.Success)
-            {
-                //Console.WriteLine("Found regex '{0}'", m.Value);
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Path is not valid!");
-            }
-
-            return false;
 
         }
 

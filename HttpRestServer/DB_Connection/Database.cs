@@ -194,6 +194,19 @@ namespace HttpRestServer.DB_Connection
             return reader.HasRows;
         }
 
+        private bool DoesTradeAlreadyExist(string id)
+        {
+            var conn = Connect();
+            var sql = "SELECT * FROM swe1_mtcg.tradings WHERE id = @id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", id));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            return reader.HasRows;
+        }
+
         private string ExtractElementType(string cardName)
         {
             var arr = Enum.GetValues(typeof(Element));
@@ -623,6 +636,28 @@ namespace HttpRestServer.DB_Connection
 
         }
 
+        public bool DeleteDeal(string username, string tradeId)
+        {
+            bool success = false;
+
+            var conn = Connect();
+            var sql = "DELETE FROM swe1_mtcg.tradings WHERE user_id=@user_id and id=@id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                success = true;
+            }
+
+            conn.Close();
+
+            return success;
+        }
+
         public Stats GetStats(string username)
         {
             Stats stats = null;
@@ -752,6 +787,44 @@ namespace HttpRestServer.DB_Connection
 
         }
 
+        public Trade GetTrade(string tradeId)
+        {
+            Trade trade = null;
+
+            if (!DoesTradeAlreadyExist(tradeId))
+            {
+                Console.WriteLine("Trade exisitiert nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.profil WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    trade = new Trade()
+                    {
+                        Id = reader.GetString(0),
+                        Username = reader.GetString(1),
+                        CardToTrade = reader.GetString(2),
+                        Type = reader.GetString(3),
+                        MinimumDamage = reader.GetFloat(4)
+                    };
+                }
+            }
+
+            conn.Close();
+
+            return trade;
+
+        }
+
+
+
         public bool EditUserProfile(string username, string newName, string newBio, string newImage)
         {
             var conn = Connect();
@@ -773,18 +846,79 @@ namespace HttpRestServer.DB_Connection
             return true;
         }
 
+
+        public bool AddTrade(string username, string tradeId, string cardToTradeId, string cardType, float minDamage)
+        {
+            if (DoesTradeAlreadyExist(tradeId))
+            {
+                Console.WriteLine("Trade existiert bereits.");
+                return false;
+            }
+
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.tradings(user_id, card_id, type, min_damage, id, username) VALUES (@user_id, @card_id, @type, @min_damage, @id, @username)";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@card_id", cardToTradeId));
+            cmd.Parameters.Add(new NpgsqlParameter("@type", cardType));
+            cmd.Parameters.Add(new NpgsqlParameter("@min_damage", minDamage));
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+
+        }
+
+        public List<Trade> GetAllTrades()
+        {
+            List<Trade> allTrades = new List<Trade>();
+
+            var conn = Connect();
+            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings";
+            using var cmd = new NpgsqlCommand(sql, conn);
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    var trade = new Trade()
+                    {
+                        Id = reader.GetString(0),
+                        Username = reader.GetString(1),
+                        CardToTrade = reader.GetString(2),
+                        Type = reader.GetString(3),
+                        MinimumDamage = reader.GetFloat(4)
+                    };
+                    allTrades.Add(trade);
+                }
+            }
+
+            conn.Close();
+
+            return allTrades;
+        }
+
         public bool CreateUserProfile(string username)
         {
             var conn = Connect();
             var sql = "INSERT INTO swe1_mtcg.profil(user_id, profile_name, image, bio) VALUES (@user_id, @username, @image, @bio)";
-            using var cmdInsert = new NpgsqlCommand(sql, conn);
-            cmdInsert.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmdInsert.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmdInsert.Parameters.Add(new NpgsqlParameter("@image", ":-)"));
-            cmdInsert.Parameters.Add(new NpgsqlParameter("@bio", "Hey there! I am playing MTCG."));
-            cmdInsert.Prepare();
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Parameters.Add(new NpgsqlParameter("@image", ":-)"));
+            cmd.Parameters.Add(new NpgsqlParameter("@bio", "Hey there! I am playing MTCG."));
+            cmd.Prepare();
 
-            if (cmdInsert.ExecuteNonQuery() != 1)
+            if (cmd.ExecuteNonQuery() != 1)
             {
                 Console.WriteLine("Profil erstellen nicht erfolgreich.");
                 conn.Close();
