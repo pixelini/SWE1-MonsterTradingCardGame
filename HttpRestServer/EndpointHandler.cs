@@ -151,7 +151,8 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleAddPackage(RequestContext req)
+        /*
+        private Response HandleAddPackage_old(RequestContext req)
         {
             var inputSyntax = new[] { new { Id = "", Name = "", Damage = "" } };
             var cards = JsonConvert.DeserializeAnonymousType(req.Payload, inputSyntax);
@@ -174,6 +175,38 @@ namespace HttpRestServer
 
             // save package in database
             if (_db.AddPackage(cards))
+            {
+                return new Response(201, "Created", "Package wurde erfolgreich hinzugefuegt.", false);
+            }
+
+            return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden.", false);
+
+        }
+        */
+
+        private Response HandleAddPackage(RequestContext req)
+        {
+            Console.WriteLine(req.Payload);
+            var newPackage = JsonConvert.DeserializeObject<Package>(req.Payload);
+
+            if (newPackage.Cards.Count != 5)
+            {
+                return new Response(400, "Bad Request", "Kartenanzahl fuer neues Package nicht korrekt. Es muessen genau 5 Karten angegeben werden.", false);
+            }
+
+            // check if IDs are valid
+            foreach (var card in newPackage.Cards)
+            {
+                // validation of input
+                if (card.Id.Length != 36)
+                {
+                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden. Bitte ueberpruefen Sie die Laenge der ID.", false);
+                }
+
+            }
+
+            // save package in database
+            if (_db.AddPackage(newPackage.PackageID, newPackage.Cards))
             {
                 return new Response(201, "Created", "Package wurde erfolgreich hinzugefuegt.", false);
             }

@@ -34,7 +34,7 @@ namespace HttpRestServer.DB_Connection
             Name = name;
         }
 
-        public NpgsqlConnection Connect()
+        private NpgsqlConnection Connect()
         {
             var connString = $"Host={Host};Username={Username};Password={Password};Database={Name}";
             var conn = new NpgsqlConnection(connString);
@@ -42,7 +42,7 @@ namespace HttpRestServer.DB_Connection
             return conn;
         }
 
-        public void Close(NpgsqlConnection conn)
+        private void Close(NpgsqlConnection conn)
         {
             conn.Close();
         }
@@ -133,14 +133,14 @@ namespace HttpRestServer.DB_Connection
             return success;
         }
 
-        public bool AddPackage(dynamic cards)
+        public bool AddPackage(string packageId, List<Card> cards)
         {
             bool success = false;
 
             // create new package and in table package
             string packageName = CreateRandomName("Package");
-            string packageID = CreatePackage(packageName);
-            Console.WriteLine("Package '{0}' (ID: {1}) wurde erstellt.\n", packageName, packageID);
+            success = CreatePackage(packageId, packageName);
+            Console.WriteLine("Package '{0}' (ID: {1}) wurde erstellt.\n", packageName, packageId);
 
             foreach (var card in cards)
             {
@@ -148,17 +148,17 @@ namespace HttpRestServer.DB_Connection
                 success = AddCard(card.Id, card.Name, card.Damage);
                 if (!success) // is the case, if card couldn't be added even though she doesn't already exist
                 {
-                    Console.WriteLine("Erstellung der Karten wurde abgebrochen. Es wurden dem Package keine Karten zugeordnet.", packageName, packageID);
+                    Console.WriteLine("Erstellung der Karten wurde abgebrochen. Es wurden dem Package keine Karten zugeordnet.", packageName, packageId);
                     return false;
                 }
             }
 
-            Console.WriteLine("Folgende Karten wurden hinzugefügt:", packageName, packageID);
+            Console.WriteLine("Folgende Karten wurden hinzugefügt:", packageName, packageId);
 
             foreach (var card in cards)
             {
                 // adds card to package in table package_has_cards
-                success = AddCardToPackage(packageID, card.Id, card.Name);
+                success = AddCardToPackage(packageId, card.Id, card.Name);
                 if (!success)
                 {
                     return false;
@@ -241,7 +241,7 @@ namespace HttpRestServer.DB_Connection
             return arr.GetValue(0)?.ToString();
         }
 
-        private bool AddCard(string id, string name, string damage)
+        private bool AddCard(string id, string name, float damage)
         {
             bool success = false;
 
@@ -257,20 +257,20 @@ namespace HttpRestServer.DB_Connection
             var elementType = ExtractElementType(name); // fire, water or normal
 
             // casts damage-string to float
-            float damageAsFloat;
-            if (!float.TryParse(damage, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out damageAsFloat))
-            {
-                Console.WriteLine("Unable to parse '{0}' to numeric value float.", damage);
-                success = false;
-                return success;
-            }
+            //float damageAsFloat;
+            //if (!float.TryParse(damage, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out damageAsFloat))
+            //{
+            //    Console.WriteLine("Unable to parse '{0}' to numeric value float.", damage);
+            //    success = false;
+            //    return success;
+            //}
 
             var conn = Connect();
             var sql = "INSERT INTO swe1_mtcg.card (name, damage, element, type, id) VALUES (@name, @damage, @element, @type, @id)";
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@name", name));
-            cmd.Parameters.Add(new NpgsqlParameter("@damage", damageAsFloat));
+            cmd.Parameters.Add(new NpgsqlParameter("@damage", damage));
             cmd.Parameters.Add(new NpgsqlParameter("@element", elementType));
             cmd.Parameters.Add(new NpgsqlParameter("@type", cardType));
             cmd.Parameters.Add(new NpgsqlParameter("@id", id));
@@ -287,10 +287,10 @@ namespace HttpRestServer.DB_Connection
             return success;
         }
 
-        private string CreatePackage(string name)
+        private bool CreatePackage(string packageId, string name)
         {
             // create ID for new package
-            string packageId = System.Guid.NewGuid().ToString();
+            //string packageId = System.Guid.NewGuid().ToString();
 
             var conn = Connect();
             var sql = "INSERT INTO swe1_mtcg.package (id, name) VALUES (@id, @name)";
@@ -303,12 +303,12 @@ namespace HttpRestServer.DB_Connection
             if (cmd.ExecuteNonQuery() == 1)
             {
                 //Console.WriteLine("Package {0} ({1}) wurde erfolgreich hinzugefügt.", packageId, packageName);
-                return packageId;
+                return true;
             }
 
             conn.Close();
 
-            return null;
+            return false;
         }
 
         private bool AddCardToPackage(string packageId, string cardId, string cardName)

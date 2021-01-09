@@ -3,9 +3,19 @@ using NUnit.Framework;
 
 namespace Mtcg
 {
+    // this class is only for deserialization of json
     public class Package
     {
-        public float Price { get; set; }
-        public List<ICard> Cards { get; set; }
+        public string PackageID { get; set; }
+        public List<Card> Cards { get; set; }
+
     }
+
+    public class Card
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public float Damage { get; set; }
+    }
+
 }
