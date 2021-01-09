@@ -105,6 +105,9 @@ namespace HttpRestServer
                 case Action.DeleteDeal:
                     response = HandleDeleteDeal(req, username);
                     break;
+                case Action.DoTrading:
+                    response = HandleDoTrading(req, username);
+                    break;
                 default:
                     Console.WriteLine("Request in not valid");
                     response = new Response(400, "Bad Request");
@@ -186,6 +189,10 @@ namespace HttpRestServer
 
         private Response HandleAddPackage(RequestContext req)
         {
+            if (req.Payload.IsNullOrEmpty())
+            {
+                return new Response(400, "Bad Request", "Kein Package angegeben.", false);
+            }
             Console.WriteLine(req.Payload);
             var newPackage = JsonConvert.DeserializeObject<Package>(req.Payload);
 
@@ -217,6 +224,10 @@ namespace HttpRestServer
 
         private Response HandleBuyPackage(RequestContext req)
         {
+            if (req.Payload.IsNullOrEmpty())
+            {
+                return new Response(400, "Bad Request", "Kein Package angegeben.", false);
+            }
             var jsonData = JObject.Parse(req.Payload);
 
             if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
@@ -354,6 +365,12 @@ namespace HttpRestServer
             int i = req.ResourcePath.LastIndexOf('/');
             string targetUsername = req.ResourcePath.Substring(i + 1);
 
+            if (username != targetUsername)
+            {
+                Console.WriteLine("Fremdes Profil darf nicht angesehen werden.");
+                return new Response(403, "Forbidden", "Fremdes Profil darf nicht angesehen werden.", false);
+            }
+
             Profile userProfile = _db.GetUserProfile(targetUsername);
 
             if (userProfile != null)
@@ -376,7 +393,7 @@ namespace HttpRestServer
             if (username != targetUsername)
             {
                 Console.WriteLine("Fremdes Profil darf nicht bearbeitet werden.");
-                return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszufuehren.", false);
+                return new Response(403, "Forbidden", "Fremdes Profil darf nicht bearbeitet werden.", false);
             }
 
             Console.WriteLine(req.Payload);
@@ -509,6 +526,59 @@ namespace HttpRestServer
         {
             // get trade id via substring, must be possible because length is already validated
             string tradeId = req.ResourcePath.Substring(10, 36);
+
+            Console.WriteLine(tradeId);
+            var offeredCardId = (string)JToken.Parse(req.Payload);
+            
+            // get details of own card that ist offered
+            ICard offeredCard = _db.GetCard(offeredCardId, username);
+            Trade requestedTrade = _db.GetTrade(tradeId);
+
+            if ((requestedTrade != null) && (offeredCard != null))
+            {
+                // print data of two cards
+                string offeredCardType = "";
+                if (offeredCard is Monster)
+                {
+                    offeredCardType = "Monster";
+                } else if (offeredCard is Spell)
+                {
+                    offeredCardType = "Spell";
+                }
+
+                Console.WriteLine("Karte aus Tradedeal: Typ: {0}, MinDamage: {1}", requestedTrade.Type, requestedTrade.MinimumDamage);
+                Console.WriteLine("Angebotene Karte: Typ: {0}, Damage: {1}", offeredCardType, offeredCard.Damage);
+                // make sure that he doesn't try to trade with himself
+                if (requestedTrade.Username == username)
+                {
+                    return new Response(400, "Bad Request", "Mit sich selbst kann nicht getraded werden.", false);
+                }
+
+
+                /*
+                // compare if offeredCard meets requirements from tradecard
+                if (requestedTrade.MinimumDamage < offeredCard.Damage)
+                {
+                    if (requestedTrade.Type == offeredCardType)
+                    {
+                        Console.WriteLine("Trade ist moeglich.");
+                        if (_db.ExecuteTrade)
+                        {
+                            Console.WriteLine("Trade wurde durchgefuehrt.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Trade ist nicht moeglich. Ueberpruefe, ob erforderter Typ und Damage-Wert erfuellt ist.");
+                    }
+                }
+                */
+
+            }
+
+            
+
+
 
             return new Response(400, "Bad Request", "Fehler.", false);
 

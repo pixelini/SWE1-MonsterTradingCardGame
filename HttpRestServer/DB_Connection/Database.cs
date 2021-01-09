@@ -139,6 +139,14 @@ namespace HttpRestServer.DB_Connection
 
             // create new package and in table package
             string packageName = CreateRandomName("Package");
+
+            // check if package already exists
+            if (DoesPackageExist(packageId))
+            {
+                Console.WriteLine("Package existiert bereits.");
+                return false;
+            }
+
             success = CreatePackage(packageId, packageName);
             Console.WriteLine("Package '{0}' (ID: {1}) wurde erstellt.\n", packageName, packageId);
 
@@ -170,6 +178,7 @@ namespace HttpRestServer.DB_Connection
 
         private bool DoesUserAlreadyExist(string username)
         {
+            bool success = false;
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username";
 
@@ -178,11 +187,14 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
         }
 
         private bool DoesCardAlreadyExist(string id)
         {
+            bool success = false;
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.card WHERE id = @id";
 
@@ -191,11 +203,14 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
         }
 
         private bool DoesTradeAlreadyExist(string id)
         {
+            bool success = false;
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.tradings WHERE id = @id";
 
@@ -204,7 +219,9 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
         }
 
         private string ExtractElementType(string cardName)
@@ -283,7 +300,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return success;
         }
 
@@ -307,7 +323,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return false;
         }
 
@@ -330,7 +345,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-            
             return success;
         }
 
@@ -346,6 +360,7 @@ namespace HttpRestServer.DB_Connection
 
         public bool ValidateToken(string token, string username)
         {
+            bool success = false;
             string correctToken = "";
             var conn = Connect();
             var sql = "SELECT auth_token FROM swe1_mtcg.\"user\" WHERE username = @username";
@@ -363,7 +378,9 @@ namespace HttpRestServer.DB_Connection
                 }
             }
 
-            return correctToken == token;
+            success = correctToken == token;
+            conn.Close();
+            return success;
         }
 
         public bool BuyPackage(string packageID, string username)
@@ -371,7 +388,7 @@ namespace HttpRestServer.DB_Connection
             int userID = GetUserID(username);
 
             // check if package exists
-            if (DoesPackageExist(packageID))
+            if (!DoesPackageExist(packageID))
             {
                 Console.WriteLine("Package existiert nicht.");
                 return false;
@@ -403,6 +420,7 @@ namespace HttpRestServer.DB_Connection
 
         private bool OwnsPackageAlready(string packageId, int userId)
         {
+            bool success = false;
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.user_owns_packages WHERE user_id = @userID AND package_id = @packageID";
 
@@ -412,11 +430,32 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
+        }
+
+        private bool OwnsCardAlready(string cardId, string username)
+        {
+            bool success = false;
+            var conn = Connect();
+            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.\"user\" JOIN swe1_mtcg.user_owns_packages uop on \"user\".id = uop.user_id JOIN swe1_mtcg.package_has_cards phc on uop.package_id = phc.pkg_id JOIN swe1_mtcg.card c on phc.card_id = c.id WHERE username = @username AND card_id = @card_id";
+
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@card_id", cardId));
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            success = reader.HasRows;
+            conn.Close();
+            return success;
         }
 
         private bool DoesPackageExist(string packageId)
         {
+            bool success = false;
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.package WHERE id = @id";
 
@@ -425,7 +464,9 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return !reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
         }
 
         private int GetUserID(string username)
@@ -445,7 +486,7 @@ namespace HttpRestServer.DB_Connection
                     userID = reader.GetInt32(0);
                 }
             }
-
+            conn.Close();
             return userID;
         }
 
@@ -467,7 +508,7 @@ namespace HttpRestServer.DB_Connection
                     availableCoins = reader.GetInt32(0);
                 }
             }
-
+            conn.Close();
             return availableCoins >= 5; // 5 is currently the price of every package
 
         }
@@ -508,6 +549,7 @@ namespace HttpRestServer.DB_Connection
 
         public bool CheckIfUserIsAdmin(string username)
         {
+            bool success = false;
             Console.WriteLine("Check if Admin...");
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username AND is_admin = 'true'";
@@ -516,7 +558,9 @@ namespace HttpRestServer.DB_Connection
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
-            return reader.HasRows;
+            success = reader.HasRows;
+            conn.Close();
+            return success;
 
         }
 
@@ -545,9 +589,41 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return myCards;
 
+        }
+
+        public ICard GetCard(string cardId, string username)
+        {
+            if (!DoesCardAlreadyExist(cardId) || !OwnsCardAlready(cardId, username))
+            {
+                Console.WriteLine("Karte exisitiert nicht oder gehoert dem User nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT name, damage, element, type FROM swe1_mtcg.card WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", cardId));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardName = reader.GetString(0);
+                    float damage = reader.GetFloat(1);
+                    string elementType = reader.GetString(2);
+                    string monsterType = reader.GetString(3);
+                    ICard card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
+                    conn.Close();
+                    return card;
+                }
+                
+            }
+
+            conn.Close();
+            return null;
         }
 
         public List<ICard> GetDeck(string username)
@@ -575,7 +651,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return myCards;
 
         }
@@ -583,34 +658,29 @@ namespace HttpRestServer.DB_Connection
         public bool AddCardToDeck(string card1, string username)
         {
             bool success = false;
+
+            // check if user owns all these cards he want in his deck
+            if(!OwnsCardAlready(card1, username))
+            {
+                return false;
+            }
+
             var conn = Connect();
-            try
+            var sql = "INSERT INTO swe1_mtcg.deck(user_id, card_id) VALUES (@user_id, @card_id)";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@card_id", card1));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() == 1)
             {
-                var sql = "INSERT INTO swe1_mtcg.deck(user_id, card_id) VALUES (@user_id, @card_id)";
-
-                using var cmd = new NpgsqlCommand(sql, conn);
-                cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-                cmd.Parameters.Add(new NpgsqlParameter("@card_id", card1));
-                cmd.Prepare();
-
-                if (cmd.ExecuteNonQuery() == 1)
-                {
-                    Console.WriteLine("ID: {0}", card1);
-                    success = true;
-                }
-
-                conn.Close();
-
-                return success;
+                Console.WriteLine("ID: {0}", card1);
+                success = true;
             }
-            catch (Exception e)
-            {
-                //Console.WriteLine(e);
-                conn.Close();
-                success = false;
-                return success;
-            }
-            
+
+            conn.Close();
+            return success;
 
         }
 
@@ -631,7 +701,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return success;
 
         }
@@ -654,7 +723,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return success;
         }
 
@@ -681,7 +749,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return stats;
 
         }
@@ -749,7 +816,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return scoreboard;
 
         }
@@ -782,7 +848,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return profile;
 
         }
@@ -798,7 +863,7 @@ namespace HttpRestServer.DB_Connection
             }
 
             var conn = Connect();
-            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.profil WHERE id = @id";
+            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings WHERE id = @id";
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
             var reader = cmd.ExecuteReader();
@@ -818,7 +883,6 @@ namespace HttpRestServer.DB_Connection
             }
 
             conn.Close();
-
             return trade;
 
         }

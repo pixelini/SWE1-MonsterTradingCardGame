@@ -125,7 +125,7 @@ namespace HttpRestServer
                     case "/battles":
                         return Action.JoinBattle;
                     default:
-                        return Action.Undefined;
+                        return (req.ResourcePath.Substring(0, 9) == "/tradings" && req.ResourcePath.Length == 46) ? Action.DoTrading : Action.Undefined;
                 }
             }
             else if (req.Method == HttpVerb.Get)

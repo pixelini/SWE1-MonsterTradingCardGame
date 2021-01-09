@@ -27,6 +27,7 @@ namespace HttpRestServer
         JoinBattle,
         ShowDeals,
         CreateDeal,
-        DeleteDeal
+        DeleteDeal,
+        DoTrading
     }
 }
