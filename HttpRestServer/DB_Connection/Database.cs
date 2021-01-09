@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Globalization;
-using System.Runtime.InteropServices.ComTypes;
 using Mtcg;
 using Mtcg.Cards;
 using Npgsql;
-using NpgsqlTypes;
-using NUnit.Framework;
 
 namespace HttpRestServer.DB_Connection
 {
@@ -34,42 +29,6 @@ namespace HttpRestServer.DB_Connection
             Name = name;
         }
 
-        private NpgsqlConnection Connect()
-        {
-            var connString = $"Host={Host};Username={Username};Password={Password};Database={Name}";
-            var conn = new NpgsqlConnection(connString);
-            conn.Open();
-            return conn;
-        }
-
-        private void Close(NpgsqlConnection conn)
-        {
-            conn.Close();
-        }
-
-        public void Testing()
-        {
-            var conn = Connect();
-            var sql = "SELECT * FROM swe1_mtcg.card";
-            using var cmd = new NpgsqlCommand(sql, conn);
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    Console.WriteLine(reader.GetString(0));
-                    Console.WriteLine(reader.GetFloat(1));
-                    Console.WriteLine(reader.GetString(2));
-                    Console.WriteLine(reader.GetString(3));
-                    Console.WriteLine(reader.GetString(4));
-                    //Console.Write("{0}\t{1} \n", reader[0], reader[1]);
-                }
-            }
-
-            conn.Close();
-        }
-
         // Register user with username and password and creates token for authentification. Method also checks if user already exists.
         public bool RegisterUser(string username, string password)
         {
@@ -82,6 +41,7 @@ namespace HttpRestServer.DB_Connection
             }
 
             Console.WriteLine("Registriere User...");
+            string encryptedPassword = Encrypt(password);
             bool isAdmin = (username == "admin");
             var token = "Basic " + username + "-mtcgToken";
             var conn = Connect();
@@ -89,7 +49,7 @@ namespace HttpRestServer.DB_Connection
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Parameters.Add(new NpgsqlParameter("@password", password));
+            cmd.Parameters.Add(new NpgsqlParameter("@password", encryptedPassword));
             cmd.Parameters.Add(new NpgsqlParameter("@authToken", token));
             cmd.Parameters.Add(new NpgsqlParameter("@isAdmin", isAdmin));
             cmd.Parameters.Add(new NpgsqlParameter("@coins", 20));
@@ -99,7 +59,6 @@ namespace HttpRestServer.DB_Connection
             if (cmd.ExecuteNonQuery() == 1)
             {
                 Console.WriteLine("User wurde erfolgreich registriert.");
-                // profil erstellen
                 CreateUserProfile(username);
                 success = true;
             }
@@ -117,13 +76,13 @@ namespace HttpRestServer.DB_Connection
             }
 
             bool success = false;
-
+            string encrypedPassword = Encrypt(password);
             var conn = Connect();
             var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username AND password = @password";
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Parameters.Add(new NpgsqlParameter("@password", password));
+            cmd.Parameters.Add(new NpgsqlParameter("@password", encrypedPassword));
             cmd.Prepare();
 
             var reader = cmd.ExecuteReader();
@@ -161,8 +120,6 @@ namespace HttpRestServer.DB_Connection
                 }
             }
 
-            Console.WriteLine("Folgende Karten wurden hinzugefügt:", packageName, packageId);
-
             foreach (var card in cards)
             {
                 // adds card to package in table package_has_cards
@@ -174,6 +131,626 @@ namespace HttpRestServer.DB_Connection
             }
 
             return success;
+        }
+
+        public bool ValidateToken(string token, string username)
+        {
+            bool success = false;
+            string correctToken = "";
+            var conn = Connect();
+            var sql = "SELECT auth_token FROM swe1_mtcg.\"user\" WHERE username = @username";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    correctToken = reader.GetString(0); // this is the correct token
+                }
+            }
+
+            success = correctToken == token;
+            conn.Close();
+            return success;
+        }
+
+        public bool BuyPackage(string packageID, string username)
+        {
+            int userID = GetUserID(username);
+
+            // check if package exists
+            if (!DoesPackageExist(packageID))
+            {
+                Console.WriteLine("Package existiert nicht.");
+                return false;
+            }
+
+            // check if packages is already in possession of user
+            if (OwnsPackageAlready(packageID, userID))
+            {
+                Console.WriteLine("User besitzt dieses Package bereits.");
+                return false;
+            }
+
+            // check if user can afford the package
+            if (!CanAffordPackage(packageID, userID))
+            {
+                Console.WriteLine("User hat nicht genug Geld für Package.");
+                return false;
+            }
+
+            // buy package and reduce money
+            if (!ExecutePurchase(packageID, userID))
+            {
+                Console.WriteLine("Kauf war nicht erfolgreich.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool CheckIfUserIsAdmin(string username)
+        {
+            bool success = false;
+            Console.WriteLine("Check if Admin...");
+            var conn = Connect();
+            var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username AND is_admin = 'true'";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            var reader = cmd.ExecuteReader();
+            success = reader.HasRows;
+            conn.Close();
+            return success;
+
+        }
+
+        public List<ICard> GetAllCards(string username)
+        {
+            List<ICard> myCards = new List<ICard>();
+
+            var conn = Connect();
+            var sql = "SELECT card_id, c.name, damage, element, type FROM swe1_mtcg.user_owns_cards JOIN swe1_mtcg.card c on c.id = user_owns_cards.card_id WHERE user_id = @user_id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardId = reader.GetString(0);
+                    string cardName = reader.GetString(1);
+                    float damage = reader.GetFloat(2);
+                    string elementType = reader.GetString(3);
+                    string monsterType = reader.GetString(4);
+                    var card = InitalizeCardAsObject(cardId, cardName, damage, elementType, monsterType);
+                    myCards.Add(card);
+                }
+            }
+
+            conn.Close();
+            return myCards;
+
+        }
+
+        public ICard GetCard(string cardId, string username)
+        {
+            if (!DoesCardAlreadyExist(cardId) || !OwnsCardAlready(cardId, username))
+            {
+                Console.WriteLine("Karte exisitiert nicht oder gehoert dem User nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT name, damage, element, type FROM swe1_mtcg.card WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", cardId));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardName = reader.GetString(0);
+                    float damage = reader.GetFloat(1);
+                    string elementType = reader.GetString(2);
+                    string monsterType = reader.GetString(3);
+                    ICard card = InitalizeCardAsObject(cardId, cardName, damage, elementType, monsterType);
+                    conn.Close();
+                    return card;
+                }
+                
+            }
+
+            conn.Close();
+            return null;
+        }
+
+        public List<ICard> GetDeck(string username)
+        {
+            List<ICard> myCards = new List<ICard>();
+
+            var conn = Connect();
+            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.deck JOIN swe1_mtcg.card c on deck.card_id = c.id WHERE user_id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardId = reader.GetString(0);
+                    string cardName = reader.GetString(1);
+                    float damage = reader.GetFloat(2);
+                    string elementType = reader.GetString(3);
+                    string monsterType = reader.GetString(4);
+                    var card = InitalizeCardAsObject(cardId, cardName, damage, elementType, monsterType);
+                    myCards.Add(card);
+                }
+            }
+
+            conn.Close();
+            return myCards;
+
+        }
+
+        public bool AddCardToDeck(string card1, string username)
+        {
+            bool success = false;
+
+            // check if user owns all these cards he want in his deck
+            if(!OwnsCardAlready(card1, username))
+            {
+                return false;
+            }
+
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.deck(user_id, card_id) VALUES (@user_id, @card_id)";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@card_id", card1));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                Console.WriteLine("ID: {0}", card1);
+                success = true;
+            }
+
+            conn.Close();
+            return success;
+
+        }
+
+        public bool DeleteDeck(string username)
+        {
+            bool success = false;
+
+            var conn = Connect();
+            var sql = "DELETE FROM swe1_mtcg.deck WHERE user_id=@user_id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() <= 0)
+            {
+                success = true;
+            }
+
+            conn.Close();
+            return success;
+
+        }
+
+        public bool DeleteDeal(string username, string tradeId)
+        {
+            bool success = false;
+
+            var conn = Connect();
+            var sql = "DELETE FROM swe1_mtcg.tradings WHERE user_id=@user_id and id=@id";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                success = true;
+            }
+
+            conn.Close();
+            return success;
+        }
+
+        public Stats GetStats(string username)
+        {
+            Stats stats = null;
+
+            var conn = Connect();
+            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    stats = new Stats();
+                    stats.Username = reader.GetString(0);
+                    stats.Elo = reader.GetInt32(1);
+                    stats.Wins = reader.GetInt32(2);
+                    stats.Losses = reader.GetInt32(3);
+                }
+            }
+
+            conn.Close();
+            return stats;
+
+        }
+
+        public bool UpdateStatsAfterWin(string username)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo+3, wins=wins+1 WHERE id = @id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        public bool UpdateStatsAfterLoss(string username)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo-5, losses=losses+1 WHERE id = @id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        public List<Stats> GetScoreboard()
+        {
+            List<Stats> scoreboard = new List<Stats>();
+
+            var conn = Connect();
+            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" order by elo DESC";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    var statsOfUser = new Stats()
+                    {
+                        Username = reader.GetString(0), 
+                        Elo = reader.GetInt32(1), 
+                        Wins = reader.GetInt32(2), 
+                        Losses = reader.GetInt32(3)
+                    };
+                    scoreboard.Add(statsOfUser);
+                }
+            }
+
+            conn.Close();
+            return scoreboard;
+
+        }
+
+        public Profile GetUserProfile(string username)
+        {
+            Profile profile = null;
+
+            if (!DoesUserAlreadyExist(username))
+            {
+                Console.WriteLine("User exisitiert nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT profile_name, image, bio FROM swe1_mtcg.profil WHERE user_id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    profile = new Profile();
+                    profile.Name = reader.GetString(0);
+                    profile.Image = reader.GetString(1);
+                    profile.Bio = reader.GetString(2);
+                }
+            }
+
+            conn.Close();
+            return profile;
+
+        }
+
+        public Trade GetTrade(string tradeId)
+        {
+            Trade trade = null;
+
+            if (!DoesTradeAlreadyExist(tradeId))
+            {
+                Console.WriteLine("Trade exisitiert nicht.");
+                return null;
+            }
+
+            var conn = Connect();
+            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings WHERE id = @id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    trade = new Trade()
+                    {
+                        Id = reader.GetString(0),
+                        Username = reader.GetString(1),
+                        CardToTrade = reader.GetString(2),
+                        Type = reader.GetString(3),
+                        MinimumDamage = reader.GetFloat(4)
+                    };
+                }
+            }
+
+            conn.Close();
+            return trade;
+
+        }
+
+        public bool EditUserProfile(string username, string newName, string newBio, string newImage)
+        {
+            var conn = Connect();
+            var sql = "UPDATE swe1_mtcg.profil SET profile_name=@name, bio=@bio, image=@image WHERE user_id = @user_id";
+            using var cmdUpdate = new NpgsqlCommand(sql, conn);
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@name", newName));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@bio", newBio));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@image", newImage));
+            cmdUpdate.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmdUpdate.Prepare();
+
+            if (cmdUpdate.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        public bool AddTrade(string username, string tradeId, string cardToTradeId, string cardType, float minDamage)
+        {
+            if (DoesTradeAlreadyExist(tradeId))
+            {
+                Console.WriteLine("Trade existiert bereits.");
+                return false;
+            }
+
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.tradings(user_id, card_id, type, min_damage, id, username) VALUES (@user_id, @card_id, @type, @min_damage, @id, @username)";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@card_id", cardToTradeId));
+            cmd.Parameters.Add(new NpgsqlParameter("@type", cardType));
+            cmd.Parameters.Add(new NpgsqlParameter("@min_damage", minDamage));
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() != 1)
+            {
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+
+        }
+
+        public bool ExecuteDeal(string tradeId, string usernameDealOwner, string cardIdDealOwner, string usernameTradeExecuter, string cardIdTradeExecuter)
+        {
+            Console.WriteLine(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter, cardIdTradeExecuter);
+            // trade executer gives his card to deal owner
+            if (!TransferCard(usernameTradeExecuter, cardIdTradeExecuter, usernameDealOwner))
+            {
+                return false;
+            }
+
+            // deal owner gives his card to trade executer
+            if (!TransferCard(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter))
+            {
+                return false;
+            }
+
+            Console.WriteLine("Karten wurden erfolgreich ausgetauscht.");
+
+            // delete deal from tradings
+            if (!DeleteDeal(usernameDealOwner, tradeId))
+            {
+                Console.WriteLine("Deal konnte nicht entfernt werden.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public List<Trade> GetAllTrades()
+        {
+            List<Trade> allTrades = new List<Trade>();
+
+            var conn = Connect();
+            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings";
+            using var cmd = new NpgsqlCommand(sql, conn);
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    var trade = new Trade()
+                    {
+                        Id = reader.GetString(0),
+                        Username = reader.GetString(1),
+                        CardToTrade = reader.GetString(2),
+                        Type = reader.GetString(3),
+                        MinimumDamage = reader.GetFloat(4)
+                    };
+                    allTrades.Add(trade);
+                }
+            }
+
+            conn.Close();
+
+            return allTrades;
+        }
+
+        public bool CreateUserProfile(string username)
+        {
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.profil(user_id, profile_name, image, bio) VALUES (@user_id, @username, @image, @bio)";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
+            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Parameters.Add(new NpgsqlParameter("@image", ":-)"));
+            cmd.Parameters.Add(new NpgsqlParameter("@bio", "Hey there! I am playing MTCG."));
+            cmd.Prepare();
+
+            if (cmd.ExecuteNonQuery() != 1)
+            {
+                Console.WriteLine("Profil erstellen nicht erfolgreich.");
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+
+        }
+
+        private ICard InitalizeCardAsObject(string id, string name, float damage, string elementType, string cardType)
+        {
+            if (cardType == CardType.Dragon.ToString())
+            {
+                var card = new Dragon(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            } 
+            else if (cardType == CardType.Elf.ToString())
+            {
+                var card = new Elf(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            } 
+            else if (cardType == CardType.Goblin.ToString())
+            {
+                var card = new Goblin(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+            else if (cardType == CardType.Knight.ToString())
+            {
+                var card = new Knight(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+            else if (cardType == CardType.Kraken.ToString())
+            {
+                var card = new Kraken(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+            else if (cardType == CardType.Ork.ToString())
+            {
+                var card = new Ork(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+            else if (cardType == CardType.Wizzard.ToString())
+            {
+                var card = new Wizzard(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+            else if (cardType == CardType.Spell.ToString())
+            {
+                var card = new Spell(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
+                return card;
+            }
+
+            return null;
+
+        }
+
+        private string Encrypt(string value)
+        {
+            // ROT-13
+            char[] array = value.ToCharArray();
+            for (int i = 0; i < array.Length; i++)
+            {
+                int number = (int)array[i];
+
+                if (number >= 'a' && number <= 'z')
+                {
+                    if (number > 'm')
+                    {
+                        number -= 13;
+                    }
+                    else
+                    {
+                        number += 13;
+                    }
+                }
+                else if (number >= 'A' && number <= 'Z')
+                {
+                    if (number > 'M')
+                    {
+                        number -= 13;
+                    }
+                    else
+                    {
+                        number += 13;
+                    }
+                }
+                array[i] = (char)number;
+            }
+            return new string(array);
+        }
+
+        private NpgsqlConnection Connect()
+        {
+            var connString = $"Host={Host};Username={Username};Password={Password};Database={Name}";
+            var conn = new NpgsqlConnection(connString);
+            conn.Open();
+            return conn;
         }
 
         private bool DoesUserAlreadyExist(string username)
@@ -273,15 +850,6 @@ namespace HttpRestServer.DB_Connection
             string cardType = ExtractCardType(name); // spell or monster
             var elementType = ExtractElementType(name); // fire, water or normal
 
-            // casts damage-string to float
-            //float damageAsFloat;
-            //if (!float.TryParse(damage, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out damageAsFloat))
-            //{
-            //    Console.WriteLine("Unable to parse '{0}' to numeric value float.", damage);
-            //    success = false;
-            //    return success;
-            //}
-
             var conn = Connect();
             var sql = "INSERT INTO swe1_mtcg.card (name, damage, element, type, id) VALUES (@name, @damage, @element, @type, @id)";
 
@@ -356,66 +924,6 @@ namespace HttpRestServer.DB_Connection
             string name = attributes[index] + " " + type;
 
             return name;
-        }
-
-        public bool ValidateToken(string token, string username)
-        {
-            bool success = false;
-            string correctToken = "";
-            var conn = Connect();
-            var sql = "SELECT auth_token FROM swe1_mtcg.\"user\" WHERE username = @username";
-
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Prepare();
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    correctToken = reader.GetString(0); // this is the correct token
-                }
-            }
-
-            success = correctToken == token;
-            conn.Close();
-            return success;
-        }
-
-        public bool BuyPackage(string packageID, string username)
-        {
-            int userID = GetUserID(username);
-
-            // check if package exists
-            if (!DoesPackageExist(packageID))
-            {
-                Console.WriteLine("Package existiert nicht.");
-                return false;
-            }
-
-            // check if packages is already in possession of user
-            if (OwnsPackageAlready(packageID, userID))
-            {
-                Console.WriteLine("User besitzt dieses Package bereits.");
-                return false;
-            }
-
-            // check if user can afford the package
-            if (!CanAffordPackage(packageID, userID))
-            {
-                Console.WriteLine("User hat nicht genug Geld für Package.");
-                return false;
-            }
-
-            // buy package and reduce money
-            if (!ExecutePurchase(packageID, userID))
-            {
-                Console.WriteLine("Kauf war nicht erfolgreich.");
-                return false;
-            }
-
-            return true;
         }
 
         private bool OwnsPackageAlready(string packageId, int userId)
@@ -573,7 +1081,7 @@ namespace HttpRestServer.DB_Connection
                     float damage = reader.GetFloat(2);
                     string elementType = reader.GetString(3);
                     string monsterType = reader.GetString(4);
-                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
+                    var card = InitalizeCardAsObject(cardId, cardName, damage, elementType, monsterType);
                     myCards.Add(card);
                 }
             }
@@ -602,431 +1110,8 @@ namespace HttpRestServer.DB_Connection
             return true;
         }
 
-        public bool CheckIfUserIsAdmin(string username)
-        {
-            bool success = false;
-            Console.WriteLine("Check if Admin...");
-            var conn = Connect();
-            var sql = "SELECT * FROM swe1_mtcg.\"user\" WHERE username = @username AND is_admin = 'true'";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Prepare();
-
-            var reader = cmd.ExecuteReader();
-            success = reader.HasRows;
-            conn.Close();
-            return success;
-
-        }
-
-        public List<ICard> GetAllCards(string username)
-        {
-            List<ICard> myCards = new List<ICard>();
-
-            var conn = Connect();
-            var sql = "SELECT card_id, c.name, damage, element, type FROM swe1_mtcg.user_owns_cards JOIN swe1_mtcg.card c on c.id = user_owns_cards.card_id WHERE user_id = @user_id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    string cardId = reader.GetString(0);
-                    string cardName = reader.GetString(1);
-                    float damage = reader.GetFloat(2);
-                    string elementType = reader.GetString(3);
-                    string monsterType = reader.GetString(4);
-                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
-                    myCards.Add(card);
-                }
-            }
-
-            conn.Close();
-            return myCards;
-
-        }
-
-        public ICard GetCard(string cardId, string username)
-        {
-            if (!DoesCardAlreadyExist(cardId) || !OwnsCardAlready(cardId, username))
-            {
-                Console.WriteLine("Karte exisitiert nicht oder gehoert dem User nicht.");
-                return null;
-            }
-
-            var conn = Connect();
-            var sql = "SELECT name, damage, element, type FROM swe1_mtcg.card WHERE id = @id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", cardId));
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    string cardName = reader.GetString(0);
-                    float damage = reader.GetFloat(1);
-                    string elementType = reader.GetString(2);
-                    string monsterType = reader.GetString(3);
-                    ICard card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
-                    conn.Close();
-                    return card;
-                }
-                
-            }
-
-            conn.Close();
-            return null;
-        }
-
-        public List<ICard> GetDeck(string username)
-        {
-            List<ICard> myCards = new List<ICard>();
-
-            var conn = Connect();
-            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.deck JOIN swe1_mtcg.card c on deck.card_id = c.id WHERE user_id = @id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    string cardId = reader.GetString(0);
-                    string cardName = reader.GetString(1);
-                    float damage = reader.GetFloat(2);
-                    string elementType = reader.GetString(3);
-                    string monsterType = reader.GetString(4);
-                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
-                    myCards.Add(card);
-                }
-            }
-
-            conn.Close();
-            return myCards;
-
-        }
-
-        public bool AddCardToDeck(string card1, string username)
-        {
-            bool success = false;
-
-            // check if user owns all these cards he want in his deck
-            if(!OwnsCardAlready(card1, username))
-            {
-                return false;
-            }
-
-            var conn = Connect();
-            var sql = "INSERT INTO swe1_mtcg.deck(user_id, card_id) VALUES (@user_id, @card_id)";
-
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmd.Parameters.Add(new NpgsqlParameter("@card_id", card1));
-            cmd.Prepare();
-
-            if (cmd.ExecuteNonQuery() == 1)
-            {
-                Console.WriteLine("ID: {0}", card1);
-                success = true;
-            }
-
-            conn.Close();
-            return success;
-
-        }
-
-        public bool DeleteDeck(string username)
-        {
-            bool success = false;
-
-            var conn = Connect();
-            var sql = "DELETE FROM swe1_mtcg.deck WHERE user_id=@user_id";
-
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmd.Prepare();
-
-            if (cmd.ExecuteNonQuery() <= 0)
-            {
-                success = true;
-            }
-
-            conn.Close();
-            return success;
-
-        }
-
-        public bool DeleteDeal(string username, string tradeId)
-        {
-            bool success = false;
-
-            var conn = Connect();
-            var sql = "DELETE FROM swe1_mtcg.tradings WHERE user_id=@user_id and id=@id";
-
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
-            cmd.Prepare();
-
-            if (cmd.ExecuteNonQuery() == 1)
-            {
-                success = true;
-            }
-
-            conn.Close();
-            return success;
-        }
-
-        public Stats GetStats(string username)
-        {
-            Stats stats = null;
-
-            var conn = Connect();
-            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" WHERE id = @id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    stats = new Stats();
-                    stats.Username = reader.GetString(0);
-                    stats.Elo = reader.GetInt32(1);
-                    stats.Wins = reader.GetInt32(2);
-                    stats.Losses = reader.GetInt32(3);
-                }
-            }
-
-            conn.Close();
-            return stats;
-
-        }
-
-        public bool UpdateStatsAfterWin(string username)
-        {
-            var conn = Connect();
-            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo+3, wins=wins+1 WHERE id = @id";
-            using var cmdUpdate = new NpgsqlCommand(sql, conn);
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
-            cmdUpdate.Prepare();
-
-            if (cmdUpdate.ExecuteNonQuery() != 1)
-            {
-                conn.Close();
-                return false;
-            }
-
-            conn.Close();
-            return true;
-        }
-
-        public bool UpdateStatsAfterLoss(string username)
-        {
-            var conn = Connect();
-            var sql = "UPDATE swe1_mtcg.\"user\" SET elo=elo-5, losses=losses+1 WHERE id = @id";
-            using var cmdUpdate = new NpgsqlCommand(sql, conn);
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
-            cmdUpdate.Prepare();
-
-            if (cmdUpdate.ExecuteNonQuery() != 1)
-            {
-                conn.Close();
-                return false;
-            }
-
-            conn.Close();
-            return true;
-        }
-
-
-        public List<Stats> GetScoreboard()
-        {
-            List<Stats> scoreboard = new List<Stats>();
-
-            var conn = Connect();
-            var sql = "SELECT username, elo, wins, losses FROM swe1_mtcg.\"user\" order by elo DESC";
-
-            using var cmd = new NpgsqlCommand(sql, conn);
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    var statsOfUser = new Stats()
-                    {
-                        Username = reader.GetString(0), 
-                        Elo = reader.GetInt32(1), 
-                        Wins = reader.GetInt32(2), 
-                        Losses = reader.GetInt32(3)
-                    };
-                    scoreboard.Add(statsOfUser);
-                }
-            }
-
-            conn.Close();
-            return scoreboard;
-
-        }
-
-        public Profile GetUserProfile(string username)
-        {
-            Profile profile = null;
-
-            if (!DoesUserAlreadyExist(username))
-            {
-                Console.WriteLine("User exisitiert nicht.");
-                return null;
-            }
-
-            var conn = Connect();
-            var sql = "SELECT profile_name, image, bio FROM swe1_mtcg.profil WHERE user_id = @id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", GetUserID(username)));
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    profile = new Profile();
-                    profile.Name = reader.GetString(0);
-                    profile.Image = reader.GetString(1);
-                    profile.Bio = reader.GetString(2);
-                }
-            }
-
-            conn.Close();
-            return profile;
-
-        }
-
-        public Trade GetTrade(string tradeId)
-        {
-            Trade trade = null;
-
-            if (!DoesTradeAlreadyExist(tradeId))
-            {
-                Console.WriteLine("Trade exisitiert nicht.");
-                return null;
-            }
-
-            var conn = Connect();
-            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings WHERE id = @id";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    trade = new Trade()
-                    {
-                        Id = reader.GetString(0),
-                        Username = reader.GetString(1),
-                        CardToTrade = reader.GetString(2),
-                        Type = reader.GetString(3),
-                        MinimumDamage = reader.GetFloat(4)
-                    };
-                }
-            }
-
-            conn.Close();
-            return trade;
-
-        }
-
-
-
-        public bool EditUserProfile(string username, string newName, string newBio, string newImage)
-        {
-            var conn = Connect();
-            var sql = "UPDATE swe1_mtcg.profil SET profile_name=@name, bio=@bio, image=@image WHERE user_id = @user_id";
-            using var cmdUpdate = new NpgsqlCommand(sql, conn);
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@name", newName));
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@bio", newBio));
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@image", newImage));
-            cmdUpdate.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmdUpdate.Prepare();
-
-            if (cmdUpdate.ExecuteNonQuery() != 1)
-            {
-                conn.Close();
-                return false;
-            }
-
-            conn.Close();
-            return true;
-        }
-
-
-        public bool AddTrade(string username, string tradeId, string cardToTradeId, string cardType, float minDamage)
-        {
-            if (DoesTradeAlreadyExist(tradeId))
-            {
-                Console.WriteLine("Trade existiert bereits.");
-                return false;
-            }
-
-            var conn = Connect();
-            var sql = "INSERT INTO swe1_mtcg.tradings(user_id, card_id, type, min_damage, id, username) VALUES (@user_id, @card_id, @type, @min_damage, @id, @username)";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@id", tradeId));
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmd.Parameters.Add(new NpgsqlParameter("@card_id", cardToTradeId));
-            cmd.Parameters.Add(new NpgsqlParameter("@type", cardType));
-            cmd.Parameters.Add(new NpgsqlParameter("@min_damage", minDamage));
-            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Prepare();
-
-            if (cmd.ExecuteNonQuery() != 1)
-            {
-                conn.Close();
-                return false;
-            }
-
-            conn.Close();
-            return true;
-
-        }
-
-        public bool ExecuteDeal(string tradeId, string usernameDealOwner, string cardIdDealOwner, string usernameTradeExecuter, string cardIdTradeExecuter)
-        {
-            Console.WriteLine(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter, cardIdTradeExecuter);
-            // trade executer gives his card to deal owner
-            if (!TransferCard(usernameTradeExecuter, cardIdTradeExecuter, usernameDealOwner))
-            {
-                return false;
-            }
-
-            // deal owner gives his card to trade executer
-            if (!TransferCard(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter))
-            {
-                return false;
-            }
-
-            Console.WriteLine("Karten wurden erfolgreich ausgetauscht.");
-
-            // delete deal from tradings
-            if (!DeleteDeal(usernameDealOwner, tradeId))
-            {
-                Console.WriteLine("Deal konnte nicht entfernt werden.");
-                return false;
-            }
-
-            return true;
-        }
-
         private bool TransferCard(string usernameSender, string cardId, string usernameReceiver)
         {
-            bool success = true;
-
             // add to receiver's cards
             var conn = Connect();
             var sql = "INSERT INTO swe1_mtcg.user_owns_cards (card_id, user_id) VALUES (@card_id, @user_id)";
@@ -1052,119 +1137,14 @@ namespace HttpRestServer.DB_Connection
 
             if (cmdDelete.ExecuteNonQuery() <= 0)
             {
-                success = true;
-            }
-
-            conn.Close();
-            return true;
-        }
-
-        public List<Trade> GetAllTrades()
-        {
-            List<Trade> allTrades = new List<Trade>();
-
-            var conn = Connect();
-            var sql = "SELECT id, username, card_id, type, min_damage FROM swe1_mtcg.tradings";
-            using var cmd = new NpgsqlCommand(sql, conn);
-
-            var reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    var trade = new Trade()
-                    {
-                        Id = reader.GetString(0),
-                        Username = reader.GetString(1),
-                        CardToTrade = reader.GetString(2),
-                        Type = reader.GetString(3),
-                        MinimumDamage = reader.GetFloat(4)
-                    };
-                    allTrades.Add(trade);
-                }
-            }
-
-            conn.Close();
-
-            return allTrades;
-        }
-
-        public bool CreateUserProfile(string username)
-        {
-            var conn = Connect();
-            var sql = "INSERT INTO swe1_mtcg.profil(user_id, profile_name, image, bio) VALUES (@user_id, @username, @image, @bio)";
-            using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
-            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
-            cmd.Parameters.Add(new NpgsqlParameter("@image", ":-)"));
-            cmd.Parameters.Add(new NpgsqlParameter("@bio", "Hey there! I am playing MTCG."));
-            cmd.Prepare();
-
-            if (cmd.ExecuteNonQuery() != 1)
-            {
-                Console.WriteLine("Profil erstellen nicht erfolgreich.");
                 conn.Close();
-                return false;
+                return true;
             }
 
-            conn.Close();
-            return true;
-
-        }
-
-
-        public ICard InitalizeCardsAsObjects(string id, string name, float damage, string elementType, string cardType)
-        {
-            if (cardType == CardType.Dragon.ToString())
-            {
-                var card = new Dragon(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            } 
-            else if (cardType == CardType.Elf.ToString())
-            {
-                var card = new Elf(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            } 
-            else if (cardType == CardType.Goblin.ToString())
-            {
-                var card = new Goblin(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-            else if (cardType == CardType.Knight.ToString())
-            {
-                var card = new Knight(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-            else if (cardType == CardType.Kraken.ToString())
-            {
-                var card = new Kraken(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-            else if (cardType == CardType.Ork.ToString())
-            {
-                var card = new Ork(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-            else if (cardType == CardType.Wizzard.ToString())
-            {
-                var card = new Wizzard(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-            else if (cardType == CardType.Spell.ToString())
-            {
-                var card = new Spell(id, name, damage, (Element)Enum.Parse(typeof(Element), elementType));
-                return card;
-            }
-
-            return null;
-
+            return false;
         }
 
     }
-
-
-
-
 
 
 }

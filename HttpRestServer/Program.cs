@@ -22,11 +22,10 @@ namespace HttpRestServer
             {
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.WriteLine("Starting server...");
-                var messages = new List<Message>();
                 var allBattles = new ConcurrentBag<Battle>();
 
                 var pathToMessages = "/messages";
-                var server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref messages, ref allBattles);
+                var server = new HttpServer(IPAddress.Loopback, 10001, pathToMessages, ref allBattles);
                 server.Run();
             }
             catch (Exception ex)

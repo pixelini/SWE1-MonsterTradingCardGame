@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Runtime;
 using System.Text;
-using System.Threading.Channels;
 using Castle.Core.Internal;
 using HttpRestServer.DB_Connection;
 using Newtonsoft.Json;
@@ -17,17 +13,13 @@ namespace HttpRestServer
 {
     public class EndpointHandler : IEndpointHandler
     {
-        private List<Message> _messages;
-        private ConcurrentBag<Battle> _allBattles; //TESTING
-        private int _counter;
+        private ConcurrentBag<Battle> _allBattles;
         private Database _db;
 
 
-        public EndpointHandler(ref List<Message> messages, ref ConcurrentBag<Battle> allBattles)
+        public EndpointHandler(ref ConcurrentBag<Battle> allBattles)
         {
-            _messages = messages;
             _allBattles = allBattles;
-            _counter = 0;
             _db = new Database();
         }
         
@@ -42,11 +34,15 @@ namespace HttpRestServer
                 return response;
             }
 
-
             //Authorization (For all requests except Login and Registration)
             if (!TryAuthorization(req))
             {
                 return new Response(403, "Forbidden", "User hat keine Berechtigung, um diese Aktion auszufuehren.", false);
+            }
+
+            if (!IsPayloadValid(req))
+            {
+                return new Response(400, "Bad Request", "Inhalt fehlt.", false);
             }
 
             string username = "";
@@ -54,65 +50,80 @@ namespace HttpRestServer
             {
                 username = GetUsernameFromAuthValue(req.Headers["Authorization"]);
             }
-            
-            switch (req.Action)
+
+            try
             {
-                case Action.Registration:
-                    response = HandleRegistration(req);
-                    break;
-                case Action.Login:
-                    response = HandleLogin(req);
-                    break;
-                case Action.AddPackage:
-                    response = HandleAddPackage(req);
-                    break;
-                case Action.BuyPackage:
-                    response = HandleBuyPackage(req);
-                    break;
-                case Action.ShowCards:
-                    response = HandleShowCards(req);
-                    break;
-                case Action.ShowDeck:
-                    response = HandleShowDeck(req, username);
-                    break;
-                case Action.ConfigureDeck:
-                    response = HandleConfigureDeck(req, username);
-                    break;
-                case Action.ShowDeckInPlainText:
-                    response = HandleShowDeckInPlainText(req, username);
-                    break;
-                case Action.ShowProfile:
-                    response = HandleShowProfile(req, username);
-                    break;
-                case Action.EditProfile:
-                    response = HandleEditProfile(req, username);
-                    break;
-                case Action.ShowStats:
-                    response = HandleShowStats(req, username);
-                    break;
-                case Action.ShowScoreboard:
-                    response = HandleShowScoreboard(req, username);
-                   break;
-                case Action.JoinBattle:
-                    response = HandleJoinBattle(req, username);
-                    break;
-                case Action.ShowDeals:
-                    response = HandleShowDeals(req, username);
-                    break;
-                case Action.CreateDeal:
-                    response = HandleCreateDeal(req, username);
-                    break;
-                case Action.DeleteDeal:
-                    response = HandleDeleteDeal(req, username);
-                    break;
-                case Action.DoTrading:
-                    response = HandleDoTrading(req, username);
-                    break;
-                default:
-                    Console.WriteLine("Request in not valid");
-                    response = new Response(400, "Bad Request");
-                    return response;
+                switch (req.Action)
+                {
+                    case Action.Registration:
+                        response = HandleRegistration(req);
+                        break;
+                    case Action.Login:
+                        response = HandleLogin(req);
+                        break;
+                    case Action.AddPackage:
+                        response = HandleAddPackage(req);
+                        break;
+                    case Action.BuyPackage:
+                        response = HandleBuyPackage(req);
+                        break;
+                    case Action.ShowCards:
+                        response = HandleShowCards(req);
+                        break;
+                    case Action.ShowDeck:
+                        response = HandleShowDeck(username);
+                        break;
+                    case Action.ConfigureDeck:
+                        response = HandleConfigureDeck(req, username);
+                        break;
+                    case Action.ShowDeckInPlainText:
+                        response = HandleShowDeckInPlainText(req, username);
+                        break;
+                    case Action.ShowProfile:
+                        response = HandleShowProfile(req, username);
+                        break;
+                    case Action.EditProfile:
+                        response = HandleEditProfile(req, username);
+                        break;
+                    case Action.ShowStats:
+                        response = HandleShowStats(username);
+                        break;
+                    case Action.ShowScoreboard:
+                        response = HandleShowScoreboard();
+                        break;
+                    case Action.JoinBattle:
+                        response = HandleJoinBattle(username);
+                        break;
+                    case Action.ShowDeals:
+                        response = HandleShowDeals();
+                        break;
+                    case Action.CreateDeal:
+                        response = HandleCreateDeal(req, username);
+                        break;
+                    case Action.DeleteDeal:
+                        response = HandleDeleteDeal(req, username);
+                        break;
+                    case Action.DoTrading:
+                        response = HandleDoTrading(req, username);
+                        break;
+                    default:
+                        Console.WriteLine("Request in not valid");
+                        response = new Response(400, "Bad Request");
+                        return response;
+                }
             }
+            catch (NullReferenceException ex)
+            {
+                Console.WriteLine("An object couldn't be referenced: " + ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("There was a problem: " + ex.Message);
+                throw;
+            }
+
+            
           
             return response;
 
@@ -154,45 +165,8 @@ namespace HttpRestServer
 
         }
 
-        /*
-        private Response HandleAddPackage_old(RequestContext req)
-        {
-            var inputSyntax = new[] { new { Id = "", Name = "", Damage = "" } };
-            var cards = JsonConvert.DeserializeAnonymousType(req.Payload, inputSyntax);
-
-            if (cards.Length != 5)
-            {
-                return new Response(400, "Bad Request", "Kartenanzahl fuer neues Package nicht korrekt. Es muessen genau 5 Karten angegeben werden.", false);
-            }
-
-            // check if IDs are valid
-            foreach (var card in cards)
-            {
-                // validation of input
-                if (card.Id.Length != 36)
-                {
-                    return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden. Bitte ueberpruefen Sie die Laenge der ID.", false);
-                }
-
-            }
-
-            // save package in database
-            if (_db.AddPackage(cards))
-            {
-                return new Response(201, "Created", "Package wurde erfolgreich hinzugefuegt.", false);
-            }
-
-            return new Response(400, "Bad Request", "Package konnte nicht hinzugefuegt werden.", false);
-
-        }
-        */
-
         private Response HandleAddPackage(RequestContext req)
         {
-            if (req.Payload.IsNullOrEmpty())
-            {
-                return new Response(400, "Bad Request", "Kein Package angegeben.", false);
-            }
             Console.WriteLine(req.Payload);
             var newPackage = JsonConvert.DeserializeObject<Package>(req.Payload);
 
@@ -224,10 +198,6 @@ namespace HttpRestServer
 
         private Response HandleBuyPackage(RequestContext req)
         {
-            if (req.Payload.IsNullOrEmpty())
-            {
-                return new Response(400, "Bad Request", "Kein Package angegeben.", false);
-            }
             var jsonData = JObject.Parse(req.Payload);
 
             if (!jsonData.ContainsKey("PackageID") || jsonData["PackageID"] == null)
@@ -268,7 +238,7 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleShowDeck(RequestContext req, string username)
+        private Response HandleShowDeck(string username)
         {
             // get cards to display
             List<ICard> myCards = _db.GetDeck(username);
@@ -305,14 +275,13 @@ namespace HttpRestServer
 
             _db.DeleteDeck(username);
 
-
             bool successful = true;
             foreach (var cardId in cardsForDeck)
             {
                 if (!_db.AddCardToDeck((string)cardId, username))
                 {
                     successful = false;
-                    Console.WriteLine("Fehler aufgetreten. Hinzufuegen abbrechen.", false);
+                    Console.WriteLine("Fehler aufgetreten. Hinzufuegen abbrechen.");
                     break;
                 }
             }
@@ -360,8 +329,6 @@ namespace HttpRestServer
 
         private Response HandleShowProfile(RequestContext req, string username)
         {
-            Console.WriteLine(req.ResourcePath);
-
             int i = req.ResourcePath.LastIndexOf('/');
             string targetUsername = req.ResourcePath.Substring(i + 1);
 
@@ -385,8 +352,6 @@ namespace HttpRestServer
 
         private Response HandleEditProfile(RequestContext req, string username)
         {
-            Console.WriteLine(req.ResourcePath);
-
             int i = req.ResourcePath.LastIndexOf('/');
             string targetUsername = req.ResourcePath.Substring(i + 1);
 
@@ -421,7 +386,7 @@ namespace HttpRestServer
 
         }
         
-        private Response HandleJoinBattle(RequestContext req, string username)
+        private Response HandleJoinBattle(string username)
         {
             // show all existing battles
             Console.WriteLine("Current Battles: " + _allBattles.Count);
@@ -526,8 +491,6 @@ namespace HttpRestServer
         {
             // get trade id via substring, must be possible because length is already validated
             string tradeId = req.ResourcePath.Substring(10, 36);
-
-            Console.WriteLine(tradeId);
             var offeredCardId = (string)JToken.Parse(req.Payload);
             
             // get details of own card that ist offered
@@ -575,7 +538,6 @@ namespace HttpRestServer
 
             }
 
-            
             return new Response(400, "Bad Request", "Trade konnte nicht durchgefuehrt werden.", false);
 
         }
@@ -583,9 +545,6 @@ namespace HttpRestServer
         private Response HandleCreateDeal(RequestContext req, string username)
         {
             Trade newTrade = JsonConvert.DeserializeObject<Trade>(req.Payload);
-
-            Console.WriteLine(req.Payload);
-            Console.WriteLine(newTrade.MinimumDamage.GetType());
 
             if (newTrade.Id.IsNullOrEmpty() || newTrade.CardToTrade.IsNullOrEmpty() || newTrade.Type.IsNullOrEmpty() || (newTrade.MinimumDamage < 0))
             {
@@ -617,7 +576,7 @@ namespace HttpRestServer
 
         }
 
-        private Response HandleShowDeals(RequestContext req, string username)
+        private Response HandleShowDeals()
         {
             // get deals to display
             List<Trade> allTrades = _db.GetAllTrades();
@@ -634,12 +593,10 @@ namespace HttpRestServer
         }
 
 
-        private Response HandleShowStats(RequestContext req, string username)
+        private Response HandleShowStats(string username)
         {
             // get stats to display
             Stats userStats = _db.GetStats(username);
-
-            Console.WriteLine();
 
             if (userStats != null)
             {
@@ -651,7 +608,7 @@ namespace HttpRestServer
             
         }
 
-        private Response HandleShowScoreboard(RequestContext req, string username)
+        private Response HandleShowScoreboard()
         {
             // get scoreboard to display
             List<Stats> scoreboard = _db.GetScoreboard();
@@ -664,129 +621,6 @@ namespace HttpRestServer
             }
 
             return new Response(400, "Bad Request", "Keine Spieler verfuegbar.", false);
-        }
-
-        private Response HandleList(RequestContext req)
-        {
-            if (_messages.Count == 0)
-            {
-                return new Response(200, "OK", "No messages have been sent yet.", false);
-            }
-
-            StringBuilder data = new StringBuilder();
-
-            Console.WriteLine("\nHandle List...\n");
-            foreach (var message in _messages)
-            {
-
-                data.Append("ID ");
-                data.Append(message.ID);
-                data.Append(":\n");
-                data.Append(message.Content);
-                data.Append("\n\n");
-                //Console.WriteLine(message.ID + ": " + message.Content);
-            }
-
-            return new Response(200, "OK", data.ToString(), false);
-        }
-
-        private Response HandleAdd(RequestContext req)
-        {
-            Console.WriteLine("\nHandle Add...\n");
-            _counter++;
-            Message inputMessage = new Message(_counter, req.Payload);
-            _messages.Add(inputMessage);
-            Console.WriteLine("New message added.\n");
-
-            return new Response(201, "Created", "ID: " + _counter.ToString(), false);
-        }
-
-        private Response HandleRead(RequestContext req)
-        {
-            Console.WriteLine("\nHandle Read...\n");
-            bool msgFound = false;
-            int msgID = GetMsgIDFromPath(req.ResourcePath); 
-
-            // search in messages if message id exists
-            foreach (var message in _messages)
-            {
-                if (message.ID == msgID)
-                {
-                    msgFound = true;   
-                    return new Response(200, "OK", message.Content, false);
-                }
-            }
-
-            if (!msgFound)
-            {
-                Console.WriteLine("Message not found! Reading not possible!\n");
-                return new Response(404, "Not Found");
-            }
-
-            return null;
-
-        }
-
-        private Response HandleUpdate(RequestContext req)
-        {
-            Console.WriteLine("\nHandle Update...\n");
-            bool msgFound = false;
-            int msgID = GetMsgIDFromPath(req.ResourcePath);
-
-            // search in messages if message id exists
-            foreach (var message in _messages)
-            {
-                if (message.ID == msgID)
-                {
-                    msgFound = true;
-                    message.Update(req.Payload);
-                    return new Response(200, "OK");
-                }
-            }
-
-            if (!msgFound)
-            {
-                Console.WriteLine("Message not found! Updating not possible!\n");
-                return new Response(404, "Not Found");
-            }
-
-            return null;
-
-        }
-
-        private Response HandleDelete(RequestContext req)
-        {
-            Console.WriteLine("\nHandle Delete...\n");
-            bool msgFound = false;
-            int msgID = GetMsgIDFromPath(req.ResourcePath);
-
-            // search in messages if message id exists
-            for (int i = 0; i < _messages.Count; i++)
-            {
-                if (_messages[i].ID == msgID)
-                {
-                    //Console.WriteLine("TO DELETE: " + Messages[i].Content);
-                    msgFound = true;
-                    _messages.Remove(_messages[i]);
-                    return new Response(200, "OK");
-                }           
-            }
-
-            if (!msgFound)
-            {
-                Console.WriteLine("Message not found! Deleting not possible!\n");
-                return new Response(404, "Not Found");
-            }
-
-            return null;
-
-        }
-
-        private int GetMsgIDFromPath(string path)
-        {
-            string msgName = System.IO.Path.GetFileName(path);
-            int msgID = int.Parse(msgName); // is possible because regex has already validated path and message number
-            return msgID;
         }
 
 
@@ -859,8 +693,27 @@ namespace HttpRestServer
 
             return true;
         }
-
-
+        private bool IsPayloadValid(RequestContext req)
+        {
+            // ensure that payload exists where necessary
+            if (!(req.Action == Action.ShowCards || 
+                req.Action == Action.ShowDeck ||
+                req.Action == Action.ShowDeckInPlainText ||
+                req.Action == Action.ShowProfile || 
+                req.Action == Action.ShowStats ||
+                req.Action == Action.ShowScoreboard ||
+                req.Action == Action.ShowDeals ||
+                req.Action == Action.JoinBattle) )
+            {
+                if (req.Payload.IsNullOrEmpty())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        
     }
 
 

@@ -19,7 +19,7 @@ namespace HttpRestServer
         public string MessagePath { get; set; }
 
 
-        public HttpServer(IPAddress addr, int port, string messagePath, ref List<Message> messages, ref ConcurrentBag<Battle> allBattles)
+        public HttpServer(IPAddress addr, int port, string messagePath, ref ConcurrentBag<Battle> allBattles)
         {
             try
             {
@@ -35,7 +35,7 @@ namespace HttpRestServer
             }
 
             MessagePath = messagePath;
-            _endpointHandler = new EndpointHandler(ref messages, ref allBattles);
+            _endpointHandler = new EndpointHandler(ref allBattles);
 
         }
 
