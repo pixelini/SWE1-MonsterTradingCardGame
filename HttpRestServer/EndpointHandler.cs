@@ -555,16 +555,16 @@ namespace HttpRestServer
                 }
 
 
-                /*
                 // compare if offeredCard meets requirements from tradecard
                 if (requestedTrade.MinimumDamage < offeredCard.Damage)
                 {
-                    if (requestedTrade.Type == offeredCardType)
+                    if (requestedTrade.Type.ToLower() == offeredCardType.ToLower())
                     {
                         Console.WriteLine("Trade ist moeglich.");
-                        if (_db.ExecuteTrade)
+                        if (_db.ExecuteDeal(tradeId, requestedTrade.Username, requestedTrade.CardToTrade, username, offeredCardId))
                         {
                             Console.WriteLine("Trade wurde durchgefuehrt.");
+                            return new Response(200, "OK", "Trade wurde durchgefuehrt. Karten wurden ausgetauscht.", false);
                         }
                     }
                     else
@@ -572,15 +572,11 @@ namespace HttpRestServer
                         Console.WriteLine("Trade ist nicht moeglich. Ueberpruefe, ob erforderter Typ und Damage-Wert erfuellt ist.");
                     }
                 }
-                */
 
             }
 
             
-
-
-
-            return new Response(400, "Bad Request", "Fehler.", false);
+            return new Response(400, "Bad Request", "Trade konnte nicht durchgefuehrt werden.", false);
 
         }
 

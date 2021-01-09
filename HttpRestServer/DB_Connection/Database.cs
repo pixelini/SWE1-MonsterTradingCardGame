@@ -530,6 +530,13 @@ namespace HttpRestServer.DB_Connection
                 return false;
             }
 
+            // add cards from package to user stack
+            var cardList = GetCardsFromPackage(packageId);
+            foreach (var card in cardList)
+            {
+                AddCardToStack(card.Id, userId);
+            }
+
             // update available coins
             sql = "UPDATE swe1_mtcg.\"user\" SET coins=coins-5 WHERE id = @id";
             using var cmdUpdate = new NpgsqlCommand(sql, conn);
@@ -539,6 +546,54 @@ namespace HttpRestServer.DB_Connection
             if (cmdUpdate.ExecuteNonQuery() != 1)
             {
                 Console.WriteLine("Fehler bei Coins-Update.");
+                conn.Close();
+                return false;
+            }
+
+            conn.Close();
+            return true;
+        }
+
+        private List<ICard> GetCardsFromPackage(string packageId)
+        {
+            List<ICard> myCards = new List<ICard>();
+
+            var conn = Connect();
+            var sql = "SELECT card_id, c.name, damage, element, type FROM swe1_mtcg.package JOIN swe1_mtcg.package_has_cards phc on package.id = phc.pkg_id JOIN swe1_mtcg.card c on phc.card_id = c.id WHERE pkg_id = @pkg_id";
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.Add(new NpgsqlParameter("@pkg_id", packageId));
+
+            var reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    string cardId = reader.GetString(0);
+                    string cardName = reader.GetString(1);
+                    float damage = reader.GetFloat(2);
+                    string elementType = reader.GetString(3);
+                    string monsterType = reader.GetString(4);
+                    var card = InitalizeCardsAsObjects(cardId, cardName, damage, elementType, monsterType);
+                    myCards.Add(card);
+                }
+            }
+
+            conn.Close();
+            return myCards;
+        }
+
+        private bool AddCardToStack(string cardId, int userId)
+        {
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.user_owns_cards (user_id, card_id) VALUES (@user_id, @card_id)";
+
+            using var cmdInsert = new NpgsqlCommand(sql, conn);
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@user_id", userId));
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@card_id", cardId));
+            cmdInsert.Prepare();
+
+            if (cmdInsert.ExecuteNonQuery() != 1)
+            {
                 conn.Close();
                 return false;
             }
@@ -569,9 +624,9 @@ namespace HttpRestServer.DB_Connection
             List<ICard> myCards = new List<ICard>();
 
             var conn = Connect();
-            var sql = "SELECT card_id, name, damage, element, type FROM swe1_mtcg.\"user\" JOIN swe1_mtcg.user_owns_packages uop on \"user\".id = uop.user_id JOIN swe1_mtcg.package_has_cards phc on uop.package_id = phc.pkg_id JOIN swe1_mtcg.card c on phc.card_id = c.id WHERE username = @username";
+            var sql = "SELECT card_id, c.name, damage, element, type FROM swe1_mtcg.user_owns_cards JOIN swe1_mtcg.card c on c.id = user_owns_cards.card_id WHERE user_id = @user_id";
             using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.Add(new NpgsqlParameter("@username", username));
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(username)));
 
             var reader = cmd.ExecuteReader();
             if (reader.HasRows)
@@ -939,6 +994,69 @@ namespace HttpRestServer.DB_Connection
             conn.Close();
             return true;
 
+        }
+
+        public bool ExecuteDeal(string tradeId, string usernameDealOwner, string cardIdDealOwner, string usernameTradeExecuter, string cardIdTradeExecuter)
+        {
+            Console.WriteLine(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter, cardIdTradeExecuter);
+            // trade executer gives his card to deal owner
+            if (!TransferCard(usernameTradeExecuter, cardIdTradeExecuter, usernameDealOwner))
+            {
+                return false;
+            }
+
+            // deal owner gives his card to trade executer
+            if (!TransferCard(usernameDealOwner, cardIdDealOwner, usernameTradeExecuter))
+            {
+                return false;
+            }
+
+            Console.WriteLine("Karten wurden erfolgreich ausgetauscht.");
+
+            // delete deal from tradings
+            if (!DeleteDeal(usernameDealOwner, tradeId))
+            {
+                Console.WriteLine("Deal konnte nicht entfernt werden.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TransferCard(string usernameSender, string cardId, string usernameReceiver)
+        {
+            bool success = true;
+
+            // add to receiver's cards
+            var conn = Connect();
+            var sql = "INSERT INTO swe1_mtcg.user_owns_cards (card_id, user_id) VALUES (@card_id, @user_id)";
+            using var cmdInsert = new NpgsqlCommand(sql, conn);
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@card_id", cardId));
+            cmdInsert.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(usernameReceiver)));
+            cmdInsert.Prepare();
+
+            if (cmdInsert.ExecuteNonQuery() != 1)
+            {
+                Console.WriteLine("User besitzt diese Karte bereits.");
+                conn.Close();
+                return false;
+            }
+
+            // delete from senders cards
+            sql = "DELETE FROM swe1_mtcg.user_owns_cards WHERE card_id=@card_id AND user_id=@user_id";
+
+            using var cmdDelete = new NpgsqlCommand(sql, conn);
+            cmdDelete.Parameters.Add(new NpgsqlParameter("@card_id", cardId));
+            cmdDelete.Parameters.Add(new NpgsqlParameter("@user_id", GetUserID(usernameSender)));
+            cmdDelete.Prepare();
+
+            if (cmdDelete.ExecuteNonQuery() <= 0)
+            {
+                success = true;
+            }
+
+            conn.Close();
+            return true;
         }
 
         public List<Trade> GetAllTrades()

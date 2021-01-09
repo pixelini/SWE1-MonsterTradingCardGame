@@ -288,47 +288,5 @@ namespace UnitTests
             MockedEndpointHandler.Verify(x => x.HandleRequest(It.Is<RequestContext>(y => y.Action.Equals(correctAction))));
         }
 
-        [Test]
-        public void Test_ProcessRequest_ReturnsListAction()
-        {
-            // Arrange
-            var correctAction = Action.List;
-            var request = new RequestContext
-            {
-                Method = HttpVerb.Get,
-                ResourcePath = "/messages",
-            };
-
-            MockedClient.Setup(client => client.ReceiveRequest()).Returns(() => request);
-
-            // Act
-            MyServer.ProcessRequest(MockedClient.Object);
-
-            // Assert
-            MockedEndpointHandler.Verify(x => x.HandleRequest(It.Is<RequestContext>(y => y.Action.Equals(correctAction))));
-        }
-
-
-        [Test]
-        public void Test_ProcessRequest_ReturnsAddAction()
-        {
-            // Arrange
-            var correctAction = Action.Add;
-            var request = new RequestContext
-            {
-                Method = HttpVerb.Post,
-                ResourcePath = "/messages",
-            };
-
-            MockedClient.Setup(client => client.ReceiveRequest()).Returns(() => request);
-
-            // Act
-            MyServer.ProcessRequest(MockedClient.Object);
-
-            // Assert
-            MockedEndpointHandler.Verify(x => x.HandleRequest(It.Is<RequestContext>(y => y.Action.Equals(correctAction))));
-        }
-
-
     }
 }
