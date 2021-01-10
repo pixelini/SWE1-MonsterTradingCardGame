@@ -8,20 +8,6 @@ namespace UnitTests
     [TestFixture]
     public class Tests
     {
-        [Test]
-        public void TestMessageUpdateChangesMsgContent()
-        {
-            // Arrange
-            Message myMessage = new Message(1, "Hello");
-
-            // Act
-            var newContent = "Message changed.";
-            myMessage.Update(newContent);
-
-            // Assert
-            Assert.AreEqual(newContent, myMessage.Content); 
-        }
-
         
         [Test]
         public void TestRequestContextConstructorDefinesCorrectHttpVerb()

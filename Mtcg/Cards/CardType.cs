@@ -8,7 +8,6 @@
         Goblin,
         Knight,
         Kraken,
-        Monster,
         Ork,
         Wizzard,
     }

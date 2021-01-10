@@ -16,10 +16,9 @@ namespace HttpRestServer
         public bool Running = false;
         private readonly IListener _listener;
         private readonly IEndpointHandler _endpointHandler;
-        public string MessagePath { get; set; }
 
 
-        public HttpServer(IPAddress addr, int port, string messagePath, ref ConcurrentBag<Battle> allBattles)
+        public HttpServer(IPAddress addr, int port, ref ConcurrentBag<Battle> allBattles)
         {
             try
             {
@@ -34,7 +33,6 @@ namespace HttpRestServer
                 Console.WriteLine("There was a problem: " + ex.Message);
             }
 
-            MessagePath = messagePath;
             _endpointHandler = new EndpointHandler(ref allBattles);
 
         }
@@ -44,7 +42,6 @@ namespace HttpRestServer
         {
             _listener = new Listener(addr, port);
             _endpointHandler = endpointHandler;
-            MessagePath = messagePath;
         }
 
         public async void Run()

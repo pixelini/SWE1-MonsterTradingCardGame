@@ -6,11 +6,6 @@ namespace HttpRestServer
 {
     public enum Action
     {
-        List,
-        Add,
-        Read,
-        Update,
-        Delete,
         Undefined,
         Registration,
         Login,

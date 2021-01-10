@@ -19,16 +19,9 @@ namespace UnitTests
         [SetUp]
         public void SetupHandlerAndMessages()
         {
-            List<Message> messages  = new List<Message>();
-            Message msg1 = new Message(1, "Heyho! What's up?");
-            Message msg2 = new Message(2, "Huhu! Just testing around.");
-            Message msg3 = new Message(3, "Wow!");
-            messages.Add(msg1);
-            messages.Add(msg2);
-            messages.Add(msg3);
             ConcurrentBag<Battle> allBattles = new ConcurrentBag<Battle>();
 
-        _myEndpointHandler = new EndpointHandler(ref messages, ref allBattles);
+        _myEndpointHandler = new EndpointHandler(ref allBattles);
         }
 
         [Test]
